@@ -1,0 +1,54 @@
+/* anims */
+@keyframes intro-img {
+	from {opacity: 1;}
+	to {opacity: 0;}
+}
+
+/* styles */
+body {
+	background-color: #2a2a2a; color: #fff; margin: 0;
+	padding: 0; user-select: none; overflow-y: hidden;
+	font-family: sans-serif;
+}
+
+#logo {
+	transform: translate(-50%, -50%); position: fixed;
+	animation: intro-img 350ms 1.5s forwards; top: 50%;
+	left: 50%; display: block; width: 40%; aspect-ratio: 1/1;
+}
+
+#logo-content {
+	display: block; width: 60%; aspect-ratio: 800 / 366;
+	margin-bottom: 15px;
+}
+
+#contentFrame {
+	animation: intro-img 400ms 2s forwards reverse; display: flex;
+	flex-direction: column; transform: translate(-50%, -50%);
+	position: fixed; top: 50%; left: 50%; opacity: 0; height: fit-content;
+	align-items: center; justify-content: center; width: fit-content;
+}
+
+#title {
+	margin: 0; font-family: serif;
+}
+
+a {
+	width: 220px; height: 32px; text-decoration: none;
+	color: #fff; background-color: #2288ff; display: flex;
+	align-items: center; justify-content: center;
+	text-align: center; border-radius: 0; font-size: 14px;
+}
+
+#explorer-link {
+	border-top-left-radius: 5px;
+	border-top-right-radius: 5px;
+	border-bottom: solid; border-width: 2px;
+}
+
+
+#yrCloud-link {
+	border-bottom-left-radius: 5px;
+	border-bottom-right-radius: 5px;
+	border-top: solid; border-width: 2px;
+}
