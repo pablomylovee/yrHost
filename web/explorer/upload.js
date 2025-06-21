@@ -6,62 +6,37 @@ const max_size = 10 * 1024 * 1024 * 1024;
 
 import {get_files} from "../explorer/script.js";
 
-const uploadf = async() => {
-	for (const file of fileInput.files) {
+const upload = async(type) => {
+	const files = type == "file" ? fileInput.files : folderInput.files;
+	
+	for (const file of files) {
 		if (file.size > max_size) {
-			window.alert("one of em files were too big (max size is 10gb): "+file.name);
+			window.alert("One of the files were too big (max size is 10gb): "+file.name);
 		}
 	}
 
-	const form_data = new FormData();
-	for (const file of fileInput.files) {
-		form_data.append('files[]', file);
+	const zip = new JSZip();
+	for (const file of files) {
+		const arrayBuffer = await file.arrayBuffer();
+		zip.file(file.webkitRelativePath || file.name, arrayBuffer);
 	}
 
-	const auth = sessionStorage.getItem("auth");
-	const Parent = encodeURIComponent(sessionStorage.getItem("current_dir").split("/").join("~/~"));
-	if (Parent !== "") {
-		fetch(`/upload-files?auth=${auth}&parent=${Parent}`, {method: 'POST', body: form_data})
-		.then(response => {
-			if (response.ok) get_files(sessionStorage.getItem("current_dir"));
-		});
-	} else {
-		fetch(`/upload-files?auth=${auth}`, {method: 'POST', body: form_data})
-		.then(response => {
-			if (response.ok) get_files(sessionStorage.getItem("current_dir"));
-		});
-	}
-}
-const uploadd = async() => {
-	for (const file of folderInput.files) {
-		if (file.size > max_size) {
-			window.alert("one of em files were too big (max size is 10gb): "+file.name);
-		}
-	}
+	const blob = await zip.generateAsync({type: 'blob', streamFiles: true});
 
-	const form_data = new FormData();
-	for (const file of folderInput.files) {
-		form_data.append('files[]', file);
-		form_data.append('paths[]', file.webkitRelativePath);
-	}
+	const auth = sessionStorage.getItem('auth');
+	const Parent = encodeURIComponent(sessionStorage.getItem('current_dir').split('/').join('~/~'));
+	const uploadUrl = Parent !== ""
+	? `/upload-files?auth=${auth}&parent=${Parent}`
+	: `/upload-files?auth=${auth}`;
 
-	const auth = sessionStorage.getItem("auth");
-	const Parent = encodeURIComponent(sessionStorage.getItem("current_dir").split("/").join("~/~"));
-	if (Parent !== "") {
-		fetch(`/upload-folders?auth=${auth}&parent=${Parent}`, {method: 'POST', body: form_data})
-		.then(response => {
-			if (response.ok) get_files(sessionStorage.getItem("current_dir"));
-		});
-	} else {
-		fetch(`/upload-folders?auth=${auth}`, {method: 'POST', body: form_data})
-		.then(response => {
-			if (response.ok) get_files(sessionStorage.getItem("current_dir"));
-		});
-	}
+	fetch(uploadUrl, {method: 'POST', headers: {"Content-Type": "application/octet-stream"}, body: blob})
+	.then(response => {
+		if (response.ok) get_files(sessionStorage.getItem('current_dir'));
+		else alert('Upload failed...');
+	});
 }
 
 upload_files.addEventListener('click', () => fileInput.click());
 upload_folders.addEventListener('click', () => folderInput.click());
-fileInput.addEventListener('change', uploadf);
-folderInput.addEventListener('change', uploadd);
-
+fileInput.addEventListener('change', () => upload("file"));
+folderInput.addEventListener('change', upload);

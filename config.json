@@ -1,6 +1,6 @@
 {
 	"port": 2012,
-	"use-auth": false,
+	"use-auth": true,
 	"auth": "likoliko12",
-	"ip-blacklist": ["192.168.100.107"]
+	"ip-blacklist": []
 }

@@ -135,6 +135,12 @@ export const get_files = (dir) => {
 			rename_img.width = "25"; rename_img.height = "25";
 			rename_button.appendChild(rename_img);
 			rename_button.classList.add("entry-renamebutton");
+			const download_button = document.createElement('button');
+			const download_img = document.createElement("img");
+			download_img.src = "../vectors/download.svg";
+			download_img.width = "25"; download_img.height = "25";
+			download_button.appendChild(download_img);
+			download_button.classList.add("entry-downloadbutton");
 
 			entry_span.addEventListener('click', () => {
 				console.log('clicked');
@@ -319,10 +325,30 @@ export const get_files = (dir) => {
 						});
 				}
 			});
+			download_button.addEventListener("click", () => {
+				const input_path = sessionStorage.getItem("current_dir")
+					? `${encodeURIComponent(sessionStorage.getItem("current_dir").split("/").join("~/~"))}~%2F~${encodeURIComponent(entry.name)}`
+					: encodeURIComponent(entry.name);
+				fetch(getFetchBall("get-content", `path=${input_path}`))
+				.then(response => {
+					if (response.ok) return response.blob();
+				})
+				.then(blob => {
+					const url = URL.createObjectURL(blob);
+					const link = document.createElement("a");
+					link.style.display = "none";
+					link.href = url;
+					link.target = "_blank";
+					link.download = entry.name;
+					link.click();
+					link.remove();
+				});
+			})
 
 			entry_div.appendChild(entry_span);
 			entry_div.appendChild(delete_button);
 			entry_div.appendChild(rename_button);
+			entry_div.appendChild(download_button);
 			files.appendChild(entry_div);
 		}
 	})

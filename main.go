@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"archive/zip"
 )
 
 type DirEntry struct {
@@ -53,12 +54,30 @@ func get_settings() UserPreferences {
 	return settings;
 }
 func http_main(w http.ResponseWriter, r *http.Request) {
+	for _, ip := range get_settings().Blacklist {
+		if host, _, _ := net.SplitHostPort(r.RemoteAddr); host == ip {
+			w.WriteHeader(http.StatusNotFound);
+			return;
+		}
+	}
 	http.FileServer(http.Dir(filepath.Join(filePath, "web"))).ServeHTTP(w, r)
 }
 func http_explore(w http.ResponseWriter, r *http.Request) {
+	for _, ip := range get_settings().Blacklist {
+		if host, _, _ := net.SplitHostPort(r.RemoteAddr); host == ip {
+			w.WriteHeader(http.StatusNotFound);
+			return;
+		}
+	}
 	http.StripPrefix("/explorer", http.FileServer(http.Dir(filepath.Join(filePath, "web", "explorer")))).ServeHTTP(w, r)
 }
 func http_deleteFile(w http.ResponseWriter, r *http.Request) {
+	for _, ip := range get_settings().Blacklist {
+		if host, _, _ := net.SplitHostPort(r.RemoteAddr); host == ip {
+			w.WriteHeader(http.StatusNotFound);
+			return;
+		}
+	}
 	if get_settings().UseAuth {
 		var auth string = r.URL.Query().Get("auth")
 		if !(auth == get_settings().Auth) {
@@ -104,6 +123,12 @@ func http_deleteFile(w http.ResponseWriter, r *http.Request) {
 }
 
 func http_renameFile(w http.ResponseWriter, r *http.Request) {
+	for _, ip := range get_settings().Blacklist {
+		if host, _, _ := net.SplitHostPort(r.RemoteAddr); host == ip {
+			w.WriteHeader(http.StatusNotFound);
+			return;
+		}
+	}
 	if get_settings().UseAuth {
 		var auth string = r.URL.Query().Get("auth")
 		if !(auth == get_settings().Auth) {
@@ -156,6 +181,12 @@ func http_renameFile(w http.ResponseWriter, r *http.Request) {
 }
 
 func http_usesAuthQM(w http.ResponseWriter, r *http.Request) {
+	for _, ip := range get_settings().Blacklist {
+		if host, _, _ := net.SplitHostPort(r.RemoteAddr); host == ip {
+			w.WriteHeader(http.StatusNotFound);
+			return;
+		}
+	}
 	fmt.Println(CYAN + ">> " + RESET + "CLIENT: Do you have a password? (asked at: " + get_datentime() + ")")
 	if get_settings().UseAuth {
 		w.WriteHeader(http.StatusCreated)
@@ -165,6 +196,12 @@ func http_usesAuthQM(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(PINK + "-------------------------------------------------" + RESET)
 }
 func http_yrAuthQM(w http.ResponseWriter, r *http.Request) {
+	for _, ip := range get_settings().Blacklist {
+		if host, _, _ := net.SplitHostPort(r.RemoteAddr); host == ip {
+			w.WriteHeader(http.StatusNotFound);
+			return;
+		}
+	}
 	var auth string = r.URL.Query().Get("auth");
 	fmt.Println(CYAN + ">> " + RESET + "CLIENT: Is your password "+string([]rune(get_settings().Auth)[0])+"***? (asked at: " + get_datentime() + ")")
 	fmt.Println(PINK + "-------------------------------------------------" + RESET)
@@ -179,6 +216,12 @@ func http_yrAuthQM(w http.ResponseWriter, r *http.Request) {
 }
 
 func http_getSettings(w http.ResponseWriter, r *http.Request) {
+	for _, ip := range get_settings().Blacklist {
+		if host, _, _ := net.SplitHostPort(r.RemoteAddr); host == ip {
+			w.WriteHeader(http.StatusNotFound);
+			return;
+		}
+	}
 	if get_settings().UseAuth {
 		var auth string = r.URL.Query().Get("auth")
 		if !(auth == get_settings().Auth) {
@@ -195,6 +238,12 @@ func http_getSettings(w http.ResponseWriter, r *http.Request) {
 }
 
 func http_setSettings(w http.ResponseWriter, r *http.Request) {
+	for _, ip := range get_settings().Blacklist {
+		if host, _, _ := net.SplitHostPort(r.RemoteAddr); host == ip {
+			w.WriteHeader(http.StatusNotFound);
+			return;
+		}
+	}
 	if get_settings().UseAuth {
 		var auth string = r.URL.Query().Get("auth")
 		if !(auth == get_settings().Auth) {
@@ -318,6 +367,12 @@ func http_setSettings(w http.ResponseWriter, r *http.Request) {
 }
 
 func http_uploadFiles(w http.ResponseWriter, r *http.Request) {
+	for _, ip := range get_settings().Blacklist {
+		if host, _, _ := net.SplitHostPort(r.RemoteAddr); host == ip {
+			w.WriteHeader(http.StatusNotFound);
+			return;
+		}
+	}
 	if get_settings().UseAuth {
 		var auth string = r.URL.Query().Get("auth")
 		if !(auth == get_settings().Auth) {
@@ -328,132 +383,65 @@ func http_uploadFiles(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	var parent string = r.URL.Query().Get("parent")
-
 	fmt.Println(CYAN + ">> " + RESET + "Attempt to upload files initiated. (" + get_datentime() + ")")
 
 	r.Body = http.MaxBytesReader(w, r.Body, 10<<30)
-	var err error = r.ParseMultipartForm(10 << 30)
-	if err != nil {
-		w.WriteHeader(http.StatusRequestEntityTooLarge)
-		fmt.Println(RED + ">> " + RESET + "The files were too large. (Maximum: 10GB)")
-		fmt.Println(PINK + "-------------------------------------------------" + RESET)
-		return
-	}
 
 	if !(parent == "") {
 		var parts []string = strings.Split(parent, "~/~")
-		parent = filepath.Join(parts...)
+		parent = filepath.Join(filePath, "storage", filepath.Join(parts...))
+	} else { parent = filepath.Join(filePath, "storage"); }
+	
+	fmt.Println(CYAN+">> "+RESET+"Receiving files to extract...");
+	var dest, err1 = os.Create(filepath.Join(filePath, "files.zip"));
+	if err1 != nil {
+			fmt.Println(RED + ">> " + RESET + "A system error occured while trying to create the output files.")
+			fmt.Println(PINK + "-------------------------------------------------" + RESET)
+			w.WriteHeader(http.StatusForbidden);
+			return
 	}
-	files := r.MultipartForm.File["files[]"]
-	for _, fileHeader := range files {
-		fmt.Println(CYAN + ">> " + RESET + "Working on: " + fileHeader.Filename)
-		var fullpath string = filepath.Join(filePath, "storage", parent, fileHeader.Filename)
-		fmt.Println(GREEN + ">> " + RESET + "Target path created: " + fullpath)
+	io.Copy(dest, r.Body);
+	fmt.Println(GREEN + ">> " + RESET + "Successfully received all files!")
+	
+	fmt.Println(CYAN+">> "+RESET+"Extracting files...");
+	var reader, _ = zip.OpenReader(filepath.Join(filePath, "files.zip"));
+	for _, f := range reader.File {
 
-		var file, err2 = fileHeader.Open()
+		var fc, err5 = f.Open();
+		if err5 == io.EOF { break; }
+		defer fc.Close();
+		if f.FileInfo().IsDir() {
+			os.MkdirAll(filepath.Join(parent, f.Name), f.Mode().Perm());
+			continue;
+		}
+		var dest1, err2 = os.OpenFile(filepath.Join(parent, f.Name), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, f.Mode().Perm());
 		if err2 != nil {
-			w.WriteHeader(http.StatusForbidden)
-			fmt.Println(RED + ">> " + RESET + "An error occured while trying to open a file.")
+			fmt.Println(RED + ">> " + RESET + "A system error occured while trying to create the output files.")
+			fmt.Println(PINK + "-------------------------------------------------" + RESET)
 			return
 		}
-		defer file.Close()
+		defer dest1.Close();
 
-		var dest, err3 = os.Create(fullpath)
-		if err3 != nil {
-			w.WriteHeader(http.StatusForbidden)
-			fmt.Println(RED + ">> " + RESET + "A system error occured while trying to create destination file for: '" + fileHeader.Filename + "'.\n	" + RED + ">>> " + RESET + err3.Error())
-			return
-		}
-		defer dest.Close()
-
-		var _, err = io.Copy(dest, file)
-		if err != nil {
-			w.WriteHeader(http.StatusForbidden)
-			fmt.Println(RED + ">> " + RESET + "A system error occured while copying '" + fileHeader.Filename + "' to destination.")
-			return
-		}
-
-		fmt.Println(GREEN + ">> " + RESET + "Successfully uploaded '" + fileHeader.Filename + "'. (" + get_datentime() + ")")
-	}
-
-	fmt.Println(GREEN + ">> " + RESET + "Successfully uploaded all files! (" + get_datentime() + ")")
-	fmt.Println(PINK + "-------------------------------------------------" + RESET)
-}
-
-func http_uploadFolders(w http.ResponseWriter, r *http.Request) {
-	if get_settings().UseAuth {
-		var auth string = r.URL.Query().Get("auth")
-		if !(auth == get_settings().Auth) {
-			fmt.Println(RED + ">> " + RESET + "Invalid authentication.")
-			w.WriteHeader(http.StatusBadRequest)
+		var _, err4 = io.Copy(dest1, fc);
+		if err4 != nil {
+			fmt.Println(RED + ">> " + RESET + "A system error occured while trying to extract the files.\n		"+err4.Error())
 			fmt.Println(PINK + "-------------------------------------------------" + RESET)
 			return
 		}
 	}
-	var parent string = r.URL.Query().Get("parent")
-
-	fmt.Println(CYAN + ">> " + RESET + "Attempt to upload files initiated. (" + get_datentime() + ")")
-
-	r.Body = http.MaxBytesReader(w, r.Body, 10<<30)
-	var err error = r.ParseMultipartForm(10 << 30)
-	if err != nil {
-		w.WriteHeader(http.StatusRequestEntityTooLarge)
-		fmt.Println(RED + ">> " + RESET + "The files were too large. (Maximum: 10GB)")
-		fmt.Println(PINK + "-------------------------------------------------" + RESET)
-		return
-	}
-
-	if !(parent == "") {
-		var parts []string = strings.Split(parent, "~/~")
-		parent = filepath.Join(parts...)
-	}
-	files := r.MultipartForm.File["files[]"]
-	paths := r.MultipartForm.Value["paths[]"]
-	for i, fileHeader := range files {
-		var clean_path string = filepath.Clean(paths[i])
-		fmt.Println(CYAN + ">> " + RESET + "Working on: " + clean_path)
-		var fullpath string = filepath.Join(filePath, "storage", parent, clean_path)
-		fmt.Println(GREEN + ">> " + RESET + "Target path created: " + fullpath)
-
-		var err1 error = os.MkdirAll(filepath.Dir(fullpath), os.ModePerm)
-		if err1 != nil {
-			fmt.Println(RED + ">> " + RESET + "A system error occured during directory making.")
-			w.WriteHeader(http.StatusForbidden)
-			return
-		}
-		fmt.Println(GREEN + ">> " + RESET + "All directories returned were made.")
-
-		var file, err2 = fileHeader.Open()
-		if err2 != nil {
-			w.WriteHeader(http.StatusForbidden)
-			fmt.Println(RED + ">> " + RESET + "An error occured while trying to open a file.")
-			return
-		}
-		defer file.Close()
-
-		var dest, err3 = os.Create(fullpath)
-		if err3 != nil {
-			w.WriteHeader(http.StatusForbidden)
-			fmt.Println(RED + ">> " + RESET + "A system error occured while trying to create destination file for: '" + fileHeader.Filename + "'.\n	" + RED + ">>> " + RESET + err3.Error())
-			return
-		}
-		defer dest.Close()
-
-		var _, err = io.Copy(dest, file)
-		if err != nil {
-			w.WriteHeader(http.StatusForbidden)
-			fmt.Println(RED + ">> " + RESET + "A system error occured while copying '" + fileHeader.Filename + "' to destination.")
-			return
-		}
-
-		fmt.Println(GREEN + ">> " + RESET + "Successfully uploaded '" + fileHeader.Filename + "'. (" + get_datentime() + ")")
-	}
-
+	os.Remove(filepath.Join(filePath, "files.zip"));
+	
 	fmt.Println(GREEN + ">> " + RESET + "Successfully uploaded all files! (" + get_datentime() + ")")
 	fmt.Println(PINK + "-------------------------------------------------" + RESET)
 }
 
 func http_getContent(w http.ResponseWriter, r *http.Request) {
+	for _, ip := range get_settings().Blacklist {
+		if host, _, _ := net.SplitHostPort(r.RemoteAddr); host == ip {
+			w.WriteHeader(http.StatusNotFound);
+			return;
+		}
+	}
 	if get_settings().UseAuth {
 		var auth string = r.URL.Query().Get("auth")
 		if !(auth == get_settings().Auth) {
@@ -488,6 +476,12 @@ func http_getContent(w http.ResponseWriter, r *http.Request) {
 }
 
 func http_getFiles(w http.ResponseWriter, r *http.Request) {
+	for _, ip := range get_settings().Blacklist {
+		if host, _, _ := net.SplitHostPort(r.RemoteAddr); host == ip {
+			w.WriteHeader(http.StatusNotFound);
+			return;
+		}
+	}
 	if get_settings().UseAuth {
 		var auth string = r.URL.Query().Get("auth")
 		if !(auth == get_settings().Auth) {
@@ -577,7 +571,6 @@ func main() {
 	http.HandleFunc("/get-content", http_getContent)
 	http.HandleFunc("/rename-file", http_renameFile)
 	http.HandleFunc("/upload-files", http_uploadFiles)
-	http.HandleFunc("/upload-folders", http_uploadFolders)
 	http.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	})
