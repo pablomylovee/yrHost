@@ -31,9 +31,9 @@ const upload = async(type) => {
 		const filename = type == "file"? encodeURIComponent(file.name)
 			: encodeURIComponent(file.webkitRelativePath.split("/").join("~/~"));
 		const raw_filename = type == "file"? file.name:file.webkitRelativePath;
-		document.querySelector("#progress-bar > span").textContent = `Uploading '${raw_filename.length > 25 ? raw_filename.slice(0, 25)+"[...]" : raw_filename}'...`;
+		document.querySelector("#progress-bar > span").textContent = `Uploading '${raw_filename.length > 25 ? raw_filename.slice(0, 25).trim()+" [...]" : raw_filename}'...`;
 		const uploadURL = getFetchBall('upload-chunk', `filename=${
-			encodeURIComponent(sessionStorage.getItem("current_dir").split("/").join("~/~"))+filename
+			encodeURIComponent(sessionStorage.getItem("current_dir").split("/").join("~/~"))+encodeURIComponent("~/~")+filename
 		}`);
 		let sent = 0;
 		while (sent < file.size) {
