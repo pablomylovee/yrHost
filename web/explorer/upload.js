@@ -25,6 +25,7 @@ const upload = async(type) => {
 	document.body.appendChild(progress_bar);
 	progress_bar.style.display = "flex";
 	document.getElementById("complete-bar").style.width = "0%";
+	progress_bar.style.animation = "come-up 300ms ease-out 500ms forwards";
 
 	for (const file of files) {
 		const filename = type == "file"? encodeURIComponent(file.name)
@@ -43,9 +44,11 @@ const upload = async(type) => {
 
 	progress_bar.style.animation = "come-down 300ms ease-out 500ms forwards";
 	setTimeout(() => {
-		progress_bar.style.display = "none";
+		progress_bar.style.animation = "none";
+		progress_bar.style.display = "flex";
+		document.getElementById("complete-bar").style.width = "0%";
 		progress_bar.remove();
-	} , 300);
+	}, 800);
 	get_files(sessionStorage.getItem("current_dir"));
 }
 
