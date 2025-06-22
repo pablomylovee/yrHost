@@ -39,7 +39,8 @@ const upload = async(type) => {
 		while (sent < file.size) {
 			const to_append = file.slice(sent, sent + send_size);
 			sent += to_append.size;
-			await fetch(uploadURL, {method: 'POST', body: to_append});	
+			await fetch(uploadURL, {method: 'POST', body: to_append});
+			get_files(sessionStorage.getItem("current_dir"))
 			document.getElementById("complete-bar").style.width = `${sent / file.size * 100}%`;
 		}
 	}
