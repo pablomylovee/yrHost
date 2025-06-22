@@ -122,7 +122,6 @@ html, body {
 	height: 50px; background-color: #333; position: fixed;
 	bottom: -50px; transform: translateX(-50%); left: 50%;
 	border-top-left-radius: 10px; border-top-right-radius: 10px;
-	animation: come-up 300ms ease-out 500ms forwards;
 }
 
 #progress-bar span { width: 100%; text-align: center; }

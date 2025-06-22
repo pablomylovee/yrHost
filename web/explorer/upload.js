@@ -47,8 +47,6 @@ const upload = async(type) => {
 	progress_bar.style.animation = "come-down 300ms ease-out 500ms forwards";
 	setTimeout(() => {
 		progress_bar.style.animation = "none";
-		progress_bar.style.display = "flex";
-		document.getElementById("complete-bar").style.width = "0%";
 		progress_bar.remove();
 	}, 800);
 	get_files(sessionStorage.getItem("current_dir"));
