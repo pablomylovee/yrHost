@@ -3,13 +3,13 @@ const upload_folders = document.getElementById('upload-folders');
 const fileInput = document.getElementById('fileInput');
 const folderInput = document.getElementById('folderInput');
 const send_size = 3 * 1024 * 1024;
-const auth = sessionStorage.getItem("auth")
-const use_auth = auth == ""? false:true
+const use_auth = sessionStorage.getItem("auth") == ""? false:true;
 
 import {get_files} from "../explorer/script.js";
 const getFetchBall = (ballModel, notes) => {
 	let resBall = `/${ballModel}`;
-	if (use_auth) resBall = `${resBall}?auth=${auth}`;
+	use_auth = sessionStorage.getItem("auth") == ""? false:true;
+	if (use_auth) resBall = `${resBall}?auth=${sessionStorage.getItem("auth")}`;
 	if (typeof notes !== 'undefined') {
 		if (use_auth) resBall = `${resBall}&${notes}`;
 		else resBall = `${resBall}?${notes}`;
