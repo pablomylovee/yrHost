@@ -7,6 +7,10 @@
 	from {bottom: -50px}
 	to {bottom: 0;}
 }
+@keyframes come-down {
+	from {bottom: 0}
+	to {bottom: -50px;}
+}
 
 /* styles */
 html, body {

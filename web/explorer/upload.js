@@ -31,7 +31,7 @@ const upload = async(type) => {
 			: encodeURIComponent(file.webkitRelativePath.split("/").join("~/~"));
 		const raw_filename = type == "file"? file.name:file.webkitRelativePath;
 		document.querySelector("#progress-bar > span").textContent = `Uploading '${raw_filename.length > 25 ? raw_filename.slice(0, 25)+"[...]" : raw_filename}'...`;
-		const uploadURL = getFetchBall('upload-chunk', `filename=${filename}`)
+		const uploadURL = getFetchBall('upload-chunk', `filename=${filename}`);
 		let sent = 0;
 		while (sent < file.size) {
 			const to_append = file.slice(sent, sent + send_size);
@@ -41,14 +41,11 @@ const upload = async(type) => {
 		}
 	}
 
-	progress_bar.style.animation = "none";
-	progress_bar.style.display = "flex";
-	progress_bar.style.animation = "come-up 300ms ease-out 1.5s forwards reverse";
+	progress_bar.style.animation = "come-down 300ms ease-out 500ms forwards";
 	setTimeout(() => {
-		console.log("alr i removed it");
 		progress_bar.style.display = "none";
 		progress_bar.remove();
-	} , 1800);
+	} , 300);
 	get_files(sessionStorage.getItem("current_dir"));
 }
 
