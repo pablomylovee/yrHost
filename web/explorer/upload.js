@@ -45,7 +45,7 @@ const upload = async(type) => {
 	setTimeout(() => {
 		progress_bar.style.display = "none";
 		progress_bar.remove();
-	} , 300);
+	} , 1800);
 	get_files(sessionStorage.getItem("current_dir"));
 }
 
