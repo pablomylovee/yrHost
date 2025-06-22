@@ -58,4 +58,6 @@ upload_folders.addEventListener('click', () => folderInput.click());
 fileInput.addEventListener('change', async() => {
 	await upload('file'); fileInput.value = '';
 });
-folderInput.addEventListener('change', async() => {upload(); folderInput.value = '';});
+folderInput.addEventListener('change', async() => {
+	await upload(); folderInput.value = '';
+});
