@@ -33,11 +33,13 @@ const upload = async(type) => {
 			sent += to_append.size;
 		}
 
-		fetch(uploadURL, {method: 'POST', body: file})
-		.then(response => {
-			if (response.ok) get_files(sessionStorage.getItem("current_dir"));
-			else alert("Upload failed...");
-		})
+		for (const chunk of chunks) {
+			fetch(uploadURL, {method: 'POST', body: chunk})
+			.then(response => {
+				if (response.ok) get_files(sessionStorage.getItem("current_dir"));
+				else alert("Upload failed...");
+			});
+		}
 	}
 }
 
