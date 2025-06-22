@@ -84,14 +84,14 @@ html, body {
 #path button:hover { background-color: #444; }
 
 #files {
-	margin: 0; padding: 0; height: calc(100% - 35px);
-	display: flex; flex-direction: column; overflow-x: hidden;
+	margin: 0; padding: 0; height: calc(100% - 39px); padding-top: 4px;
+	display: flex; flex-direction: column; overflow-x: hidden; gap: 4px;
 	overflow-y: auto; align-items: center;
 }
 
 .fileEntry {
-	width: calc(100% - 16px); height: 40px; display: flex;
-	flex-direction: row; align-items: center; gap: 5px;
+	width: calc(100% - 20px); max-height: 40px; display: flex;
+	flex-direction: row; align-items: center; min-height: 40px;
 	padding-left: 8px; padding-right: 8px;
 }
 

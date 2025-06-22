@@ -44,6 +44,7 @@ const upload = async(type) => {
 			get_files(sessionStorage.getItem("current_dir"))
 			document.getElementById("complete-bar").style.width = `${sent / file.size * 100}%`;
 		}
+		document.getElementById("complete-bar").style.width = "0%";
 	}
 
 	progress_bar.style.animation = "come-down 300ms ease-out forwards";
@@ -51,7 +52,7 @@ const upload = async(type) => {
 		progress_bar.style.animation = "none";
 		progress_bar.remove();
 	}, 800);
-	get_files(dest_path);
+	get_files(sessionStorage.getItem("current_dir"));
 }
 
 upload_files.addEventListener('click', () => fileInput.click());
