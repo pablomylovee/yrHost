@@ -52,5 +52,11 @@ const upload = async(type) => {
 
 upload_files.addEventListener('click', () => fileInput.click());
 upload_folders.addEventListener('click', () => folderInput.click());
-fileInput.addEventListener('change', () => upload("file"));
-folderInput.addEventListener('change', upload);
+fileInput.addEventListener('change', () => {
+	upload("file");
+	fileInput.value = '';
+});
+folderInput.addEventListener('change', () => {
+	upload("folder");
+	folderInput.value = '';
+});
