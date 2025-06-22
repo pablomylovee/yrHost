@@ -42,6 +42,8 @@ const upload = async(type) => {
 		}
 	}
 
+	progress_bar.style.animation = "none";
+	progress_bar.style.display = "flex";
 	progress_bar.style.animation = "come-down 300ms ease-out 500ms forwards";
 	setTimeout(() => {
 		progress_bar.style.animation = "none";
