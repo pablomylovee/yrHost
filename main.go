@@ -521,6 +521,8 @@ func main() {
 	var safp, _ = filepath.Split(afp)
 	filePath = safp
 
+	os.Mkdir(filepath.Join(filePath, "storage"), 0755);
+
 	fmt.Println(BLUE + "Initializing " + PINK + "listener..." + RESET)
 	var listener, err = net.Listen("tcp", ":"+strconv.Itoa(get_settings().Port))
 	if err != nil {
