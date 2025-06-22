@@ -14,7 +14,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"archive/zip"
 )
 
 type DirEntry struct {
@@ -46,18 +45,18 @@ func get_datentime() string {
 	return Time.Format("2006-01-02 15:04:05")
 }
 func get_settings() UserPreferences {
-	var settings UserPreferences;
-	var config_json, _ = os.Open(filepath.Join(filePath, "config.json"));
-	defer config_json.Close();
-	
-	json.NewDecoder(config_json).Decode(&settings);
-	return settings;
+	var settings UserPreferences
+	var config_json, _ = os.Open(filepath.Join(filePath, "config.json"))
+	defer config_json.Close()
+
+	json.NewDecoder(config_json).Decode(&settings)
+	return settings
 }
 func http_main(w http.ResponseWriter, r *http.Request) {
 	for _, ip := range get_settings().Blacklist {
 		if host, _, _ := net.SplitHostPort(r.RemoteAddr); host == ip {
-			w.WriteHeader(http.StatusNotFound);
-			return;
+			w.WriteHeader(http.StatusNotFound)
+			return
 		}
 	}
 	http.FileServer(http.Dir(filepath.Join(filePath, "web"))).ServeHTTP(w, r)
@@ -65,8 +64,8 @@ func http_main(w http.ResponseWriter, r *http.Request) {
 func http_explore(w http.ResponseWriter, r *http.Request) {
 	for _, ip := range get_settings().Blacklist {
 		if host, _, _ := net.SplitHostPort(r.RemoteAddr); host == ip {
-			w.WriteHeader(http.StatusNotFound);
-			return;
+			w.WriteHeader(http.StatusNotFound)
+			return
 		}
 	}
 	http.StripPrefix("/explorer", http.FileServer(http.Dir(filepath.Join(filePath, "web", "explorer")))).ServeHTTP(w, r)
@@ -74,8 +73,8 @@ func http_explore(w http.ResponseWriter, r *http.Request) {
 func http_deleteFile(w http.ResponseWriter, r *http.Request) {
 	for _, ip := range get_settings().Blacklist {
 		if host, _, _ := net.SplitHostPort(r.RemoteAddr); host == ip {
-			w.WriteHeader(http.StatusNotFound);
-			return;
+			w.WriteHeader(http.StatusNotFound)
+			return
 		}
 	}
 	if get_settings().UseAuth {
@@ -125,8 +124,8 @@ func http_deleteFile(w http.ResponseWriter, r *http.Request) {
 func http_renameFile(w http.ResponseWriter, r *http.Request) {
 	for _, ip := range get_settings().Blacklist {
 		if host, _, _ := net.SplitHostPort(r.RemoteAddr); host == ip {
-			w.WriteHeader(http.StatusNotFound);
-			return;
+			w.WriteHeader(http.StatusNotFound)
+			return
 		}
 	}
 	if get_settings().UseAuth {
@@ -183,8 +182,8 @@ func http_renameFile(w http.ResponseWriter, r *http.Request) {
 func http_usesAuthQM(w http.ResponseWriter, r *http.Request) {
 	for _, ip := range get_settings().Blacklist {
 		if host, _, _ := net.SplitHostPort(r.RemoteAddr); host == ip {
-			w.WriteHeader(http.StatusNotFound);
-			return;
+			w.WriteHeader(http.StatusNotFound)
+			return
 		}
 	}
 	fmt.Println(CYAN + ">> " + RESET + "CLIENT: Do you have a password? (asked at: " + get_datentime() + ")")
@@ -198,28 +197,28 @@ func http_usesAuthQM(w http.ResponseWriter, r *http.Request) {
 func http_yrAuthQM(w http.ResponseWriter, r *http.Request) {
 	for _, ip := range get_settings().Blacklist {
 		if host, _, _ := net.SplitHostPort(r.RemoteAddr); host == ip {
-			w.WriteHeader(http.StatusNotFound);
-			return;
+			w.WriteHeader(http.StatusNotFound)
+			return
 		}
 	}
-	var auth string = r.URL.Query().Get("auth");
-	fmt.Println(CYAN + ">> " + RESET + "CLIENT: Is your password "+string([]rune(get_settings().Auth)[0])+"***? (asked at: " + get_datentime() + ")")
+	var auth string = r.URL.Query().Get("auth")
+	fmt.Println(CYAN + ">> " + RESET + "CLIENT: Is your password " + string([]rune(get_settings().Auth)[0]) + "***? (asked at: " + get_datentime() + ")")
 	fmt.Println(PINK + "-------------------------------------------------" + RESET)
 
 	if get_settings().UseAuth && auth == get_settings().Auth {
-		w.WriteHeader(http.StatusOK);
-		return;
+		w.WriteHeader(http.StatusOK)
+		return
 	} else {
-		w.WriteHeader(http.StatusGone);
-		return;
+		w.WriteHeader(http.StatusGone)
+		return
 	}
 }
 
 func http_getSettings(w http.ResponseWriter, r *http.Request) {
 	for _, ip := range get_settings().Blacklist {
 		if host, _, _ := net.SplitHostPort(r.RemoteAddr); host == ip {
-			w.WriteHeader(http.StatusNotFound);
-			return;
+			w.WriteHeader(http.StatusNotFound)
+			return
 		}
 	}
 	if get_settings().UseAuth {
@@ -240,8 +239,8 @@ func http_getSettings(w http.ResponseWriter, r *http.Request) {
 func http_setSettings(w http.ResponseWriter, r *http.Request) {
 	for _, ip := range get_settings().Blacklist {
 		if host, _, _ := net.SplitHostPort(r.RemoteAddr); host == ip {
-			w.WriteHeader(http.StatusNotFound);
-			return;
+			w.WriteHeader(http.StatusNotFound)
+			return
 		}
 	}
 	if get_settings().UseAuth {
@@ -366,11 +365,11 @@ func http_setSettings(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func http_uploadFiles(w http.ResponseWriter, r *http.Request) {
+func http_uploadChunk(w http.ResponseWriter, r *http.Request) {
 	for _, ip := range get_settings().Blacklist {
 		if host, _, _ := net.SplitHostPort(r.RemoteAddr); host == ip {
-			w.WriteHeader(http.StatusNotFound);
-			return;
+			w.WriteHeader(http.StatusNotFound)
+			return
 		}
 	}
 	if get_settings().UseAuth {
@@ -382,64 +381,36 @@ func http_uploadFiles(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	var parent string = r.URL.Query().Get("parent")
+	var filename string = r.URL.Query().Get("filename")
 	fmt.Println(CYAN + ">> " + RESET + "Attempt to upload files initiated. (" + get_datentime() + ")")
 
 	r.Body = http.MaxBytesReader(w, r.Body, 10<<30)
+	var target_path string = filepath.Join(filePath, "storage", filepath.Join(strings.Split(filename, "~/~")...))
+	os.MkdirAll(filepath.Dir(target_path), 0755)
 
-	if !(parent == "") {
-		var parts []string = strings.Split(parent, "~/~")
-		parent = filepath.Join(filePath, "storage", filepath.Join(parts...))
-	} else { parent = filepath.Join(filePath, "storage"); }
-	
-	fmt.Println(CYAN+">> "+RESET+"Receiving files to extract...");
-	var dest, err1 = os.Create(filepath.Join(filePath, "files.zip"));
+	var dest, err1 = os.OpenFile(target_path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 	if err1 != nil {
-			fmt.Println(RED + ">> " + RESET + "A system error occured while trying to create the output files.")
-			fmt.Println(PINK + "-------------------------------------------------" + RESET)
-			w.WriteHeader(http.StatusForbidden);
-			return
+		fmt.Println(RED + ">> " + RESET + "A system error occured while trying to open the target file.")
+		w.WriteHeader(http.StatusForbidden)
+		return
 	}
-	io.Copy(dest, r.Body);
-	fmt.Println(GREEN + ">> " + RESET + "Successfully received all files!")
-	
-	fmt.Println(CYAN+">> "+RESET+"Extracting files...");
-	var reader, _ = zip.OpenReader(filepath.Join(filePath, "files.zip"));
-	for _, f := range reader.File {
-
-		var fc, err5 = f.Open();
-		if err5 == io.EOF { break; }
-		defer fc.Close();
-		if f.FileInfo().IsDir() {
-			os.MkdirAll(filepath.Join(parent, f.Name), f.Mode().Perm());
-			continue;
-		}
-		var dest1, err2 = os.OpenFile(filepath.Join(parent, f.Name), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, f.Mode().Perm());
-		if err2 != nil {
-			fmt.Println(RED + ">> " + RESET + "A system error occured while trying to create the output files.")
-			fmt.Println(PINK + "-------------------------------------------------" + RESET)
-			return
-		}
-		defer dest1.Close();
-
-		var _, err4 = io.Copy(dest1, fc);
-		if err4 != nil {
-			fmt.Println(RED + ">> " + RESET + "A system error occured while trying to extract the files.\n		"+err4.Error())
-			fmt.Println(PINK + "-------------------------------------------------" + RESET)
-			return
-		}
+	defer dest.Close()
+	var _, err2 = io.Copy(dest, r.Body)
+	if err2 != nil {
+		fmt.Println(RED + ">> " + RESET + "A system error occured while trying to write to the target file.")
+		w.WriteHeader(http.StatusForbidden)
+		return
 	}
-	os.Remove(filepath.Join(filePath, "files.zip"));
-	
-	fmt.Println(GREEN + ">> " + RESET + "Successfully uploaded all files! (" + get_datentime() + ")")
+
+	fmt.Println(GREEN + ">> " + RESET + "Successfully written all chunks! (" + get_datentime() + ")")
 	fmt.Println(PINK + "-------------------------------------------------" + RESET)
 }
 
 func http_getContent(w http.ResponseWriter, r *http.Request) {
 	for _, ip := range get_settings().Blacklist {
 		if host, _, _ := net.SplitHostPort(r.RemoteAddr); host == ip {
-			w.WriteHeader(http.StatusNotFound);
-			return;
+			w.WriteHeader(http.StatusNotFound)
+			return
 		}
 	}
 	if get_settings().UseAuth {
@@ -478,8 +449,8 @@ func http_getContent(w http.ResponseWriter, r *http.Request) {
 func http_getFiles(w http.ResponseWriter, r *http.Request) {
 	for _, ip := range get_settings().Blacklist {
 		if host, _, _ := net.SplitHostPort(r.RemoteAddr); host == ip {
-			w.WriteHeader(http.StatusNotFound);
-			return;
+			w.WriteHeader(http.StatusNotFound)
+			return
 		}
 	}
 	if get_settings().UseAuth {
@@ -570,7 +541,7 @@ func main() {
 	http.HandleFunc("/set-settings", http_setSettings)
 	http.HandleFunc("/get-content", http_getContent)
 	http.HandleFunc("/rename-file", http_renameFile)
-	http.HandleFunc("/upload-files", http_uploadFiles)
+	http.HandleFunc("/upload-chunk", http_uploadChunk)
 	http.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	})

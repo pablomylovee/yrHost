@@ -9,7 +9,7 @@ const go_on = (addAuth) => {
 	get_files();
 }
 
-let use_auth;
+export let use_auth;
 let auth;
 const authenticationDiv = document.getElementById("authentication");
 const authinput = document.getElementById('password-input');
