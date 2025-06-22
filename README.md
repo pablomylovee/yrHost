@@ -4,3 +4,6 @@
 <p align="center">
     A home server to store your files.<br><i>The first tool of the yrKit collection!</i>
 </p>
+<p align="center">
+    <sup>Latest version: v0.0.1</sup>
+</p>
