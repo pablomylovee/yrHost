@@ -3,7 +3,7 @@ const upload_folders = document.getElementById('upload-folders');
 const fileInput = document.getElementById('fileInput');
 const folderInput = document.getElementById('folderInput');
 const send_size = 3 * 1024 * 1024;
-const use_auth = sessionStorage.getItem("auth") == ""? false:true;
+let use_auth = sessionStorage.getItem("auth") == ""? false:true;
 
 import {get_files} from "../explorer/script.js";
 const getFetchBall = (ballModel, notes) => {
