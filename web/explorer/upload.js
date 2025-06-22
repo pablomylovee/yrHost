@@ -22,25 +22,18 @@ const upload = async(type) => {
 	const files = type == "file" ? fileInput.files : folderInput.files;
 
 	for (const file of files) {
-		const use_path = type == "file" ? encodeURIComponent(file.name)
-			: encodeURIComponent(file.webkitRelativePath.split("/").join("~/~"))
-		const uploadURL = getFetchBall("upload-chunk", `filename=${use_path}`);
+		const filename = type == "file"? encodeURIComponent(file.name)
+			: encodeURIComponent(file.webkitRelativePath.split("/").join("~/~"));
+		const uploadURL = getFetchBall('upload-chunk', `filename=${filename}`)
 		let sent = 0;
-		let chunks = [];
 		while (sent < file.size) {
-			const to_append = file.slice(sent, sent+send_size);
-			chunks.push(to_append);
+			const to_append = file.slice(sent, sent + send_size);
 			sent += to_append.size;
-		}
-
-		for (const chunk of chunks) {
-			fetch(uploadURL, {method: 'POST', body: chunk})
-			.then(response => {
-				if (response.ok) get_files(sessionStorage.getItem("current_dir"));
-				else alert("Upload failed...");
-			});
+			await fetch(uploadURL, {method: 'POST', body: to_append});	
 		}
 	}
+
+	get_files(sessionStorage.getItem("current_dir"));
 }
 
 upload_files.addEventListener('click', () => fileInput.click());

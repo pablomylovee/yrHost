@@ -382,7 +382,7 @@ func http_uploadChunk(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	var filename string = r.URL.Query().Get("filename")
-	fmt.Println(CYAN + ">> " + RESET + "Attempt to upload files initiated. (" + get_datentime() + ")")
+	fmt.Println(CYAN + ">> " + RESET + "Attempt to write chunks initiated. (" + get_datentime() + ")")
 
 	r.Body = http.MaxBytesReader(w, r.Body, 10<<30)
 	var target_path string = filepath.Join(filePath, "storage", filepath.Join(strings.Split(filename, "~/~")...))
