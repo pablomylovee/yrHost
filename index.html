@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en" style="width: 100%; height: 100%; margin: 0; padding: 0;">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>Explorer</title>
+		<link rel="stylesheet" type="text/css" href="../explorer/style.css">
+		<link rel="shortcut icon" href="../yrCloud.png">
+	</head>
+	<body>
+		<input type="file" style="display: none;" id="fileInput" multiple>
+		<input type="file" multiple webkitdirectory style="display: none;" id="folderInput" multiple>
+		<div id="authentication">
+			<span>Enter your password to see files.</span>
+			<input id="password-input" type="password">
+			<button id="authenticateButton">Go!</button>
+		</div>
+		<div id="progress-bar">
+			<span>Progress for ...</span>
+			<div id="bar">
+				<div id="complete-bar"></div>
+			</div>
+		</div>
+		<div id="mainContent">
+			<div id="path">
+				<span style="overflow: hidden; overflow-x: auto;">~</span>
+				<button id="gb">
+					<img src="../vectors/go-back.svg" width="30" height="30">
+				</button>
+				<button id="refresh">
+					<img src="../vectors/refresh.svg" width="20" height="20">
+				</button>
+				<button id="upload-files">
+					<img src="../vectors/upload-files.svg" width="25" height="25">
+				</button>
+				<button id="upload-folders">
+					<img src="../vectors/upload-folders.svg" width="25" height="25">
+				</button>
+			</div>
+			<div id="files"></div>
+		</div>
+
+		<div id="dim-frame"></div>
+		<video id="videocont" style="display: none; position: fixed; transform: translate(-50%, -50%); top: 50%; left: 50%;" controls></video>
+		<img id="imgcont" style="display: none; position: fixed; transform: translate(-50%, -50%); top: 50%; left: 50%;"></img>
+		<audio id="audiocont" style="display: none; position: fixed; transform: translate(-50%, -50%); top: 50%; left: 50%;" controls></audio>
+		<pre><code id="textcont">Loading, please wait...</code></pre>
+		
+		<script src="../explorer/script.js" type="module"></script>
+		<script src="../explorer/upload.js" type="module"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+	</body>
+</html>
