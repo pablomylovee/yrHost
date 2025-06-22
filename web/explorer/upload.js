@@ -43,6 +43,7 @@ const upload = async(type) => {
 
 	progress_bar.style.animation = "come-up 300ms ease-out 1.5s forwards reverse";
 	setTimeout(() => {
+		console.log("alr i removed it");
 		progress_bar.style.display = "none";
 		progress_bar.remove();
 	} , 1800);
