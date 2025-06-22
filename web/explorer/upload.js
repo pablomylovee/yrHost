@@ -32,7 +32,9 @@ const upload = async(type) => {
 			: encodeURIComponent(file.webkitRelativePath.split("/").join("~/~"));
 		const raw_filename = type == "file"? file.name:file.webkitRelativePath;
 		document.querySelector("#progress-bar > span").textContent = `Uploading '${raw_filename.length > 25 ? raw_filename.slice(0, 25)+"[...]" : raw_filename}'...`;
-		const uploadURL = getFetchBall('upload-chunk', `filename=${filename}`);
+		const uploadURL = getFetchBall('upload-chunk', `filename=${
+			encodeURIComponent(sessionStorage.getItem("current_dir").split("/").join("~/~"))+filename
+		}`);
 		let sent = 0;
 		while (sent < file.size) {
 			const to_append = file.slice(sent, sent + send_size);
@@ -55,4 +57,4 @@ upload_folders.addEventListener('click', () => folderInput.click());
 fileInput.addEventListener('change', async() => {
 	await upload('file'); fileInput.value = '';
 });
-folderInput.addEventListener('change', async() => {await upload(); folderInput.value = '';});
+folderInput.addEventListener('change', async() => {upload(); folderInput.value = '';});
