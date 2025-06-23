@@ -430,6 +430,8 @@ func http_getContent(w http.ResponseWriter, r *http.Request) {
 	var fullpath string = filepath.Join(filePath, "storage", path)
 	fmt.Println(GREEN + ">> " + RESET + "Target path created: " + fullpath)
 
+	var file, _ = os.Open(fullpath);
+	defer file.Close();
 	var file_content, err = os.ReadFile(fullpath)
 	if err != nil {
 		fmt.Println(RED + ">> " + RESET + "A system error occured while trying to read file.")
@@ -441,7 +443,7 @@ func http_getContent(w http.ResponseWriter, r *http.Request) {
 	var contentType string = http.DetectContentType(file_content[:512])
 	fmt.Println(GREEN + ">> " + RESET + "File typed received: " + contentType)
 	w.Header().Set("Content-Type", contentType)
-	w.Write(file_content)
+	io.CopyBuffer(w, file, make([]byte, 3*1024*1024));
 	fmt.Println(GREEN + ">> " + RESET + "File content returned! (" + get_datentime() + ")")
 	fmt.Println(PINK + "-------------------------------------------------" + RESET)
 }
