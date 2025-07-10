@@ -1,5 +1,5 @@
 <h1 align="center">
-    <img src="./web/yrCloud-cropped.png" width="475" height="217">
+    <img src="gui/home/images/yrHost.png" width="475" height="217">
 </h1>
 <p align="center">
     The only home server you need.<br><i>The first tool from yrKit!</i>
