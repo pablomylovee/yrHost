@@ -1,6 +1,6 @@
 {
 	"port": 3005,
-	"sudo-auth": "likoliko12",
+	"sudo-auth": "password",
 	"ip-blacklist": [],
 	"ip-whitelist": [],
 	"services": ["files", "pics"],
@@ -11,8 +11,8 @@
 	],
 	"yrFiles": {
 		"save-path": "D:"
-  },
-  "yrPics": {
-    "save-path": "E:"
-  }
+	},
+	"yrPics": {
+		"save-path": "E:"
+	}
 }
