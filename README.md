@@ -14,7 +14,7 @@ This is the introduction section of the README. Ask 3 questions here: What? Why?
 ## What?
 `yrHost` is a home server that's packed with features and services to replace your daily online services, whether it be Google Drive, Google Photos, Spotify, etc. This project is actually more of a template for an API that you can use across all devices. The GUI in the website is only a simpler way to use the API. In the following sections of this README file, you'll learn how to install, configure, and use `yrHost`.  
 
-In this tool, there are 5 services...
+In this tool, there are 4 services...
 - **yrFiles**: a Google Drive alternative
 - **yrSound**: a Spotify alternative
 - **yrChat**: chat with your buddies that are connected to your WiFi
