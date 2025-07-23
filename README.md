@@ -16,7 +16,6 @@ This is the introduction section of the README. Ask 3 questions here: What? Why?
 
 In this tool, there are 5 services...
 - **yrFiles**: a Google Drive alternative
-- **yrPics**: a Google Photos alternative
 - **yrSound**: a Spotify alternative
 - **yrChat**: chat with your buddies that are connected to your WiFi
 - **yrShare**: an AirDrop alternative
