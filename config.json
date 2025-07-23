@@ -3,7 +3,7 @@
 	"sudo-auth": "password",
 	"ip-blacklist": [],
 	"ip-whitelist": [],
-	"services": ["files", "pics"],
+	"services": ["files", "sound"],
 	"users": [
 		{
 			"username": "root", "password": "root"
