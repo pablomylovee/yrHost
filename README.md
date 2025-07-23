@@ -56,7 +56,7 @@ But, if you followed the Unchad way (downloading the executable w/ `config.json`
 	"sudo-auth": "password", (the password for administrator operations)
 	"ip-blacklist": [], (IP addresses that can't use your server)
 	"ip-whitelist": [], (the only IP addresses that can use your server)
-	"services": ["files", "pics"], (the services to use, only "files" and "pics" are available)
+	"services": ["files", "sound"], (the services to use, only "files" and "sound" are available)
 	"users": [ (the users for your server, leave empty if you want a login free server)
 		{
 			"username": "root", "password": "root"
