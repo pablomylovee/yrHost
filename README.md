@@ -27,7 +27,7 @@ Well, from my personal experience, I *love* privacy. I also like having no ads o
 ...and you're right. If you wanted to, you could just store all of the files from Google Drive to your local drive, save your photos to your phone, listen to music with your built-in audio player, and etc. I know, jacka**. You're supposed to use it on another computer that can act as a full-time server. Google doesn't save all of a user's data from Drive to their employees' personal computers! You can also use this tool if you have an old laptop around and you don't know what to do with it. Use it to make a home server! More specifically, a `yrHost` home server!
 
 ## How?
-With Go and HTML-CSS-JS. And it's Vanilla JS. Suck it, React masochists.
+With Go and HTML-CSS-JS. And it's Vanilla JS.
 
 # Installation
 At the time of writing this, the app is still in its beta, meaning that it isn't complete yet and that I'm still developing it. The following section for the installation of `yrHost` will be for people who either want to contribute, or people who want to see the progress for the tool, which is why you'll need to download and install the Go CLI, then clone (with `git`) & run the project with either...
