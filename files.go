@@ -16,10 +16,10 @@ type DirEntry struct {
 	Type string `json:"type"`
 }
 
-var save_path string = get_settings().YrPics.SavePath;
+var yf_savePath string = get_settings().YrFiles.SavePath
 
 func http_deleteFile(w http.ResponseWriter, r *http.Request) {
-	if !check_allowed(r) && !check_auth(r) {
+	if !check_allowed(r) || !check_auth(r) {
 		return
 	}
 	var file_td string = r.URL.Query().Get("name")
@@ -33,7 +33,7 @@ func http_deleteFile(w http.ResponseWriter, r *http.Request) {
 	}
 	var parts []string = strings.Split(file_td, "~/~")
 	file_td = filepath.Clean(filepath.Join(parts...))
-	var ts_filePath string = filepath.Join(save_path, username, file_td)
+	var ts_filePath string = filepath.Join(yf_savePath, username, file_td)
 	log(COMPLETE, "Path created: "+ts_filePath, false)
 
 	var _, err = os.Stat(ts_filePath)
@@ -55,7 +55,7 @@ func http_deleteFile(w http.ResponseWriter, r *http.Request) {
 }
 
 func http_renameFile(w http.ResponseWriter, r *http.Request) {
-	if !check_allowed(r) && !check_auth(r) {
+	if !check_allowed(r) || !check_auth(r) {
 		return
 	}
 	var username string = r.URL.Query().Get("username")
@@ -71,7 +71,7 @@ func http_renameFile(w http.ResponseWriter, r *http.Request) {
 
 	var parts []string = strings.Split(path, "~/~")
 	path = filepath.Join(parts...)
-	var target_file string = filepath.Join(save_path, username, path)
+	var target_file string = filepath.Join(yf_savePath, username, path)
 	log(COMPLETE, "Path created: "+target_file, false)
 
 	var dir_name, _ = filepath.Split(target_file)
@@ -98,7 +98,7 @@ func http_renameFile(w http.ResponseWriter, r *http.Request) {
 }
 
 func http_uploadChunk(w http.ResponseWriter, r *http.Request) {
-	if !check_allowed(r) && !check_auth(r) {
+	if !check_allowed(r) || !check_auth(r) {
 		return
 	}
 	var username string = r.URL.Query().Get("username")
@@ -106,7 +106,7 @@ func http_uploadChunk(w http.ResponseWriter, r *http.Request) {
 	log(ATTEMPT, "Attempt to write chunks initiated.", false)
 
 	r.Body = http.MaxBytesReader(w, r.Body, 10<<30)
-	var target_path string = filepath.Join(save_path, username, filepath.Join(strings.Split(filename, "~/~")...))
+	var target_path string = filepath.Join(yf_savePath, username, filepath.Join(strings.Split(filename, "~/~")...))
 	os.MkdirAll(filepath.Dir(target_path), 0755)
 
 	var dest, err1 = os.OpenFile(target_path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
@@ -127,7 +127,7 @@ func http_uploadChunk(w http.ResponseWriter, r *http.Request) {
 }
 
 func http_getContent(w http.ResponseWriter, r *http.Request) {
-	if !check_allowed(r) && !check_auth(r) {
+	if !check_allowed(r) || !check_auth(r) {
 		return
 	}
 	var username string = r.URL.Query().Get("username")
@@ -136,25 +136,26 @@ func http_getContent(w http.ResponseWriter, r *http.Request) {
 	var parts []string = strings.Split(path, "~/~")
 	path = filepath.Join(parts...)
 	log(ATTEMPT, "Working on: "+path, false)
-	var fullpath string = filepath.Join(save_path, username, path)
+	var fullpath string = filepath.Join(yf_savePath, username, path)
 	log(COMPLETE, "Target path created: "+fullpath, false)
 
-	var file_content, err = os.ReadFile(fullpath)
+	var file, err = os.Open(fullpath)
 	if err != nil {
 		log(ERROR, "A system error occured while trying to read target file.", true)
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
+	var fileContent, _ = os.ReadFile(fullpath)
 	log(COMPLETE, "Successfully read file.", false)
-	var contentType string = http.DetectContentType(file_content[:512])
+	var contentType string = http.DetectContentType(fileContent[:512])
 	log(ATTEMPT, "File type received: "+contentType, false)
 	w.Header().Set("Content-Type", contentType)
-	w.Write(file_content)
+	io.CopyBuffer(w, file, make([]byte, 3072))
 	log(COMPLETE, "File content returned! ("+get_datentime()+")", true)
 }
 
 func http_getFiles(w http.ResponseWriter, r *http.Request) {
-	if !check_allowed(r) && !check_auth(r) {
+	if !check_allowed(r) || !check_auth(r) {
 		return
 	}
 	var username string = r.URL.Query().Get("username")
@@ -170,7 +171,7 @@ func http_getFiles(w http.ResponseWriter, r *http.Request) {
 	var files []os.DirEntry
 
 	if search_dir == "" {
-		var search_path string = filepath.Join(save_path, username)
+		var search_path string = filepath.Join(yf_savePath, username)
 		log(COMPLETE, "Full path created: "+search_path, false)
 		var x, err = os.ReadDir(search_path)
 		if err != nil {
@@ -180,7 +181,7 @@ func http_getFiles(w http.ResponseWriter, r *http.Request) {
 		}
 		files = x
 	} else {
-		var search_path string = filepath.Join(save_path, username, search_dir)
+		var search_path string = filepath.Join(yf_savePath, username, search_dir)
 		log(COMPLETE, "Full path created: "+search_path, false)
 		var x, err = os.ReadDir(search_path)
 		if err != nil {
@@ -205,6 +206,7 @@ func http_getFiles(w http.ResponseWriter, r *http.Request) {
 
 	log(COMPLETE, "All files stored in a list.", false)
 
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(toReturn)
 	log(COMPLETE, "Directory indexing was successful ("+get_datentime()+")", true)
 }

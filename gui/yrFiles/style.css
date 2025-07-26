@@ -11,6 +11,10 @@
 	from {bottom: 0}
 	to {bottom: -50px;}
 }
+@keyframes turn {
+	from {transform: rotate(0deg);}
+	to {transform: rotate(360deg);}
+}
 
 /* styles */
 html, body {
@@ -90,8 +94,8 @@ html, body {
 }
 
 .fileEntry span {
-	width: calc(100% - 70px); height: 100%; display: flex;
-	align-items: center;
+	flex: 1; height: 100%; display: flex;
+	align-items: center; gap: 8px;
 }
 
 .fileEntry button {
@@ -100,6 +104,11 @@ html, body {
 	border-radius: 8px; cursor: pointer;
 }
 .fileEntry button:hover { background-color: #444; }
+
+.fileEntry > span > img {
+	width: 20px; aspect-ratio: 1 / 1; animation: turn 1.5s linear infinite forwards;
+	display: none;
+}
 
 #progress-bar {
 	width: 60%; display: none; flex-direction: column;

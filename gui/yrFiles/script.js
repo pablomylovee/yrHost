@@ -10,7 +10,7 @@ const go_on = (addAuth) => {
 	authenticationDiv.style.display = 'none';
 	document.getElementById('mainContent').style.display = 'block';
 	get_files();
-}
+};
 
 export let use_auth;
 let username, password;
@@ -117,7 +117,6 @@ export const get_files = (dir) => {
 				entry_span.style.fontWeight = "bolder";
 			}
 			const delete_button = document.createElement('button');
-			delete_button.classList.add("entry-deletebutton");
 			const delete_img = document.createElement("img");
 			delete_img.src = "./vectors/trash.svg";
 			delete_img.width = "25"; delete_img.height = "25";
@@ -127,13 +126,15 @@ export const get_files = (dir) => {
 			rename_img.src = "./vectors/rename.svg";
 			rename_img.width = "25"; rename_img.height = "25";
 			rename_button.appendChild(rename_img);
-			rename_button.classList.add("entry-renamebutton");
 			const download_button = document.createElement('button');
 			const download_img = document.createElement("img");
 			download_img.src = "./vectors/download.svg";
-			download_img.width = "25"; download_img.height = "25";
+			download_img.width = "25";
 			download_button.appendChild(download_img);
-			download_button.classList.add("entry-downloadbutton");
+			const loading_img = document.createElement("img");
+			loading_img.src = "./vectors/loading.svg";
+			loading_img.width = "20";
+			entry_span.appendChild(loading_img);
 
 			entry_span.addEventListener('click', () => {
 				console.log('clicked');
@@ -143,6 +144,7 @@ export const get_files = (dir) => {
 				} else if (entry.type == "d") {
 					get_files(sessionStorage.getItem("current_dir")+"/"+entry.name);
 				} else if (entry.type == "f" && sessionStorage.getItem("current_dir") == '') {
+					loading_img.style.display = "block";
 					fetch(getFetchBall('get-content', `path=${entry.name}`))
 					.then(response => {
 						const contentType = response.headers.get('Content-Type');
@@ -221,10 +223,12 @@ export const get_files = (dir) => {
 							dim_frame.style.display = "block";
 							textcont.style.display = "block";
 						}
+						loading_img.style.display = "none";
 					});
 				} else if (entry.type == "f") {
 					const dir = sessionStorage.getItem("current_dir");
 					const input_path = dir ? `${encodeURIComponent(dir)}~%2F~${encodeURIComponent(entry.name)}` : encodeURIComponent(entry.name);
+					loading_img.style.display = "block";
 					fetch(getFetchBall('get-content', `path=${input_path}`))
 					.then(response => {
 						const contentType = response.headers.get('Content-Type');
@@ -298,6 +302,7 @@ export const get_files = (dir) => {
 							dim_frame.style.display = "block";
 							textcont.style.display = "block";
 						}
+						loading_img.style.display = "none";
 					});
 				}	
 			});

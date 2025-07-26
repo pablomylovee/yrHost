@@ -2,7 +2,6 @@ package main
 
 import (
 	"embed"
-	"encoding/json"
 	"fmt"
 	"io/fs"
 	"net"
@@ -11,7 +10,6 @@ import (
 	"path/filepath"
 	"slices"
 	"strconv"
-	"time"
 )
 
 var filePath string
@@ -20,36 +18,11 @@ var filePath string
 
 //go:embed gui/yrFiles/*
 var yrFiles embed.FS
-//go:embed gui/yrPics/*
-var yrPics embed.FS
 
-type User struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-}
-type UserPreferences struct {
-	Port      int             														`json:"port"`
-	Users     []User          														`json:"users"`
-	SudoAuth  string          														`json:"sudo-auth"`
-	Blacklist []string        														`json:"ip-blacklist"`
-	Whitelist []string        														`json:"ip-whitelist"`
-	Services  []string        														`json:"services"`
-	YrFiles   struct {SavePath string `json:"save-path"`} `json:"yrFiles"`
-	YrPics    struct {SavePath string `json:"save-path"`} `json:"yrPics"`
-}
+//go:embed gui/yrSound/*
+var yrSound embed.FS
 
-func get_datentime() string {
-	var Time time.Time = time.Now()
-	return Time.Format("2006-01-02 15:04:05")
-}
-func get_settings() UserPreferences {
-	var settings UserPreferences
-	var config_json, _ = os.Open(filepath.Join(filePath, "config.json"))
-	defer config_json.Close()
-
-	json.NewDecoder(config_json).Decode(&settings)
-	return settings
-}
+// settings types
 func check_allowed(r *http.Request) bool {
 	var host, _, _ = net.SplitHostPort(r.RemoteAddr)
 	if slices.Contains(get_settings().Blacklist, host) {
@@ -74,6 +47,10 @@ func check_auth(r *http.Request) bool {
 	var username string = r.URL.Query().Get("username")
 	var password string = r.URL.Query().Get("password")
 
+	if username == "" || password == "" {
+		return false
+	}
+
 	for _, user := range get_settings().Users {
 		if !(user.Username == username) || !(user.Password == password) {
 			return false
@@ -87,7 +64,12 @@ func main() {
 	filePath, _ = filepath.Abs(".")
 
 	for _, user := range get_settings().Users {
-		os.Mkdir(filepath.Join(save_path, user.Username), 0755)
+		if slices.Contains(get_settings().Services, "files") {
+			os.Mkdir(filepath.Join(yf_savePath, user.Username), 0755)
+		}
+		if slices.Contains(get_settings().Services, "sound") {
+			os.Mkdir(filepath.Join(ys_savePath, user.Username), 0755)
+		}
 	}
 
 	fmt.Println(BLUE + "Initializing " + PINK + "listener..." + RESET)
@@ -137,14 +119,18 @@ func main() {
 		http.HandleFunc("/rename-file", http_renameFile)
 		http.HandleFunc("/upload-chunk", http_uploadChunk)
 	}
-	if slices.Contains(get_settings().Services, "pics") {
-		http.HandleFunc("/yrPics/", func(w http.ResponseWriter, r *http.Request) {
+	// yrSound
+	if slices.Contains(get_settings().Services, "sound") {
+		http.HandleFunc("/yrSound/", func(w http.ResponseWriter, r *http.Request) {
 			if !check_allowed(r) {
 				return
 			}
-			var yrPicsSub, _ = fs.Sub(yrPics, "gui/yrPics")
-			http.StripPrefix("/yrPics/", http.FileServer(http.FS(yrPicsSub))).ServeHTTP(w, r)
+			var yrSoundSub, _ = fs.Sub(yrSound, "gui/yrSound")
+			http.StripPrefix("/yrSound/", http.FileServer(http.FS(yrSoundSub))).ServeHTTP(w, r)
 		})
+		http.HandleFunc("/get-cover", http_getCover)
+		http.HandleFunc("/get-albums", http_getAlbums)
+		http.HandleFunc("/get-songs", http_getSongs)
 	}
 
 	// log for start

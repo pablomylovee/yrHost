@@ -11,38 +11,25 @@ const (
 	RESET string = "\033[0m"
 )
 const (
-	ERROR int = 0
-	ATTEMPT int = 1
+	ERROR    int = 0
+	ATTEMPT  int = 1
 	COMPLETE int = 2
 )
 
-func log(logType int, content string, addSeparator bool) string {
+func log(logType int, content string, addSeparator bool) bool {
 	switch logType {
 	case ERROR:
-		fmt.Printf("%s>> %s%s", RED, RESET, content)
-		fmt.Print("\n")
-		if addSeparator {
-			fmt.Printf("%s-------------------------------------------------%s", PINK, RESET)
-		}
-		fmt.Print("\n")
-		return ""
+		fmt.Printf("%s>> %s%s\n", RED, RESET, content)
 	case ATTEMPT:
-		fmt.Printf("%s>> %s%s", BLUE, RESET, content)
-		fmt.Print("\n")
-		if addSeparator {
-			fmt.Printf("%s-------------------------------------------------%s", PINK, RESET)
-		}
-		fmt.Print("\n")
-		return ""
+		fmt.Printf("%s>> %s%s\n", BLUE, RESET, content)
 	case COMPLETE:
-		fmt.Printf("%s>> %s%s", GREEN, RESET, content)
-		fmt.Print("\n")
-		if addSeparator {
-			fmt.Printf("%s-------------------------------------------------%s", PINK, RESET)
-		}
-		fmt.Print("\n")
-		return ""
+		fmt.Printf("%s>> %s%s\n", GREEN, RESET, content)
 	default:
-		return "No such log type."
+		return false
 	}
+
+	if addSeparator {
+		fmt.Printf("%s-------------------------------------------------%s\n", PINK, RESET)
+	}
+	return true
 }
