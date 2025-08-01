@@ -2,12 +2,14 @@ package main
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/dhowden/tag"
@@ -23,26 +25,25 @@ type Song struct {
 	Track       int    `json:"track-number"`
 	Disc        int    `json:"disc-number"`
 }
+type SongwID struct {
+	ID          int    `json:"id"`
+	FilePath    string `json:"file-path"`
+	Title       string `json:"title"`
+	Artist      string `json:"artist"`
+	Album       string `json:"album"`
+	AlbumArtist string `json:"album-artist"`
+	Year        int    `json:"year"`
+	Track       int    `json:"track-number"`
+	Disc        int    `json:"disc-number"`
+}
 type Album struct {
 	Title  string `json:"title"`
 	Artist string `json:"artist"`
 	Year   int    `json:"year"`
-	Songs  []Song `json:"songs"`
 }
 
 var ys_savePath string = get_settings().YrSound.SavePath
 
-func getPath(toSearch Song, songsSlice []Song) (string, bool) {
-	for _, song := range songsSlice {
-		if toSearch.Title == song.Title &&
-			toSearch.Artist == song.Artist &&
-			toSearch.Album == song.Album &&
-			toSearch.AlbumArtist == song.AlbumArtist {
-			return song.FilePath, true
-		}
-	}
-	return "", false
-}
 func Index(path string, songsSlice *[]Song) error {
 	var stats, err1 = os.Stat(path)
 	if err1 != nil {
@@ -96,44 +97,100 @@ func http_getCover(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log(ATTEMPT, "Attempt to get song cover initiated.", false)
-	var songs []Song
-	var err2 error = Index(filepath.Join(ys_savePath, r.URL.Query().Get("username")), &songs)
-	if err2 != nil {
-		fmt.Println(err2.Error())
+	var username string = r.URL.Query().Get("username")
+	var id, _ = strconv.Atoi(r.URL.Query().Get("id"))
+	var ysDB, err = sql.Open("sqlite3", filepath.Join(ys_savePath, username, ".db"))
+	if err != nil {
+		log(ERROR, "An error occured while trying to open yrSound database.", true)
 		return
 	}
+	defer ysDB.Close()
+	var song, err1 = ysDB.Query(`select title, artist, filepath from songs where id=?`, id)
+	if err1 != nil {
+		log(ERROR, "An error occured while trying to find song.", true)
+		return
+	}
+	defer song.Close()
+	if song.Next() {
+		var title, artist, file_path string
+		song.Scan(&title, &artist, &file_path)
+		log(COMPLETE, fmt.Sprintf("Found song! Found: %s - %s", title, artist), false)
+
+		var file, err3 = os.Open(file_path)
+		if err3 != nil {
+			log(ERROR, "A system error occured while trying to open song file.", true)
+			return
+		}
+		defer file.Close()
+		var songMD, err2 = tag.ReadFrom(file)
+		if err2 != nil {
+			log(ERROR, "A system error occured while tring to open song file.", true)
+			return
+		}
+
+		w.Header().Set("Content-Type", http.DetectContentType(songMD.Picture().Data[:600]))
+		var picbuffer *bytes.Buffer = bytes.NewBuffer(songMD.Picture().Data)
+		io.CopyBuffer(w, picbuffer, make([]byte, 3072))
+
+		log(COMPLETE, "Returned song cover successfully!", true)
+	} else {
+		log(ERROR, "Couldn't find song.", true)
+		return
+	}
+}
+
+func http_getID(w http.ResponseWriter, r *http.Request) {
+	if !check_allowed(r) || !check_auth(r) {
+		return
+	}
+	log(ATTEMPT, "Attempt to get song ID initiated.", false)
 
 	defer r.Body.Close()
-	var body, _ = io.ReadAll(r.Body)
-	var song Song
-	json.Unmarshal(body, &song)
-
-	var songPath, found = getPath(song, songs)
-	if !found {
-		log(ERROR, "Song couldn't be found.", true)
-		return
-	}
-	var songFile, _ = os.Open(songPath)
-	log(COMPLETE, "Song found!", false)
-
-	log(ATTEMPT, "Getting song information.", false)
-	var songMD, err = tag.ReadFrom(songFile)
+	var body, err = io.ReadAll(r.Body)
 	if err != nil {
-		log(ERROR, "A system error occured while trying to get song information.", true)
+		log(ERROR, "An error occured while trying to read request body.", true)
 		return
 	}
-	log(COMPLETE, "Song information received!", false)
 
-	log(ATTEMPT, "Returning song cover.", false)
-	var cover io.Reader = bytes.NewBuffer(songMD.Picture().Data)
-	w.Header().Set("Content-Type", songMD.Picture().MIMEType)
-	fmt.Println(songMD.Picture().MIMEType)
-	var _, err1 = io.CopyBuffer(w, cover, make([]byte, 3072))
+	var username string = r.URL.Query().Get("username")
+	var songInfo struct {
+		Title       string `json:"title"`
+		Artist      string `json:"artist"`
+		Album       string `json:"album"`
+		AlbumArtist string `json:"album-artist"`
+	}
+	json.Unmarshal(body, &songInfo)
+
+	var ysDB, err1 = sql.Open("sqlite3", filepath.Join(ys_savePath, username, ".db"))
 	if err1 != nil {
-		log(ERROR, "An error occured while trying to return song cover.", true)
+		log(ERROR, "A system error occured while trying to open yrSound database.", true)
 		return
 	}
-	log(COMPLETE, "Song cover successfully returned!", true)
+	defer ysDB.Close()
+
+	var song, err2 = ysDB.Query(`select id from songs where title=? AND artist=? AND album=? AND albumArtist=?`,
+		songInfo.Title, songInfo.Artist, songInfo.Album, songInfo.AlbumArtist,
+	)
+	if err2 != nil {
+		log(ERROR, "A system error occured while trying to search for song ID.", true)
+		return
+	}
+	defer song.Close()
+
+	if song.Next() {
+		var id int64
+		var err error = song.Scan(&id)
+		if err != nil {
+			return
+		}
+		var idStr string = strconv.FormatInt(id, 10)
+		w.Header().Set("Content-Type", "text/plain")
+		w.Write([]byte(idStr))
+
+		log(COMPLETE, "Song ID returned!", true)
+	} else {
+		log(ERROR, "Could not find song.", true)
+	}
 }
 
 func http_getAlbums(w http.ResponseWriter, r *http.Request) {
@@ -142,64 +199,323 @@ func http_getAlbums(w http.ResponseWriter, r *http.Request) {
 	}
 	log(ATTEMPT, "Attempt to get albums initiated.", false)
 
-	var songs []Song
-	var err error = Index(filepath.Join(ys_savePath, r.URL.Query().Get("username")), &songs)
+	var ysDB, err = sql.Open("sqlite3", filepath.Join(ys_savePath, r.URL.Query().Get("username"), ".db"))
 	if err != nil {
-		log(ERROR, "An error occured while indexing songs.", true)
+		log(ERROR, "A system error occured while trying to open yrSound database.", true)
 		return
 	}
-	log(COMPLETE, "Indexed songs!", false)
+	defer ysDB.Close()
 
-	log(ATTEMPT, "Sorting songs to their albums...", false)
 	var albums []Album
-	for _, song := range songs {
-		var added bool = false
-		for i := range albums {
-			if song.Album == albums[i].Title {
-				albums[i].Songs = append(albums[i].Songs, song)
-				added = true
-				break
+	var query, err1 = ysDB.Query(`select album, albumArtist, year from songs`)
+	if err1 != nil {
+		log(ERROR, "A system error occured while trying to get albums from database.", true)
+		return
+	}
+	defer query.Close()
+
+	for query.Next() {
+		var year int
+		var album, albumArtist string
+		var err3 error = query.Scan(&album, &albumArtist, &year)
+		if err3 != nil {
+			log(ERROR, "An error occured while getting albums.", true)
+			return
+		}
+		var albumType Album = Album{
+			Title: album, Artist: albumArtist,
+			Year: year,
+		}
+		var exists bool = false
+		for _, v := range albums {
+			if albumType.Title == v.Title &&
+				albumType.Artist == v.Artist &&
+				albumType.Year == v.Year {
+				exists = true
 			}
 		}
-		if !added {
-			albums = append(albums, Album{
-				Title:  song.Album,
-				Artist: song.AlbumArtist,
-				Year:   song.Year,
-				Songs:  []Song{song},
-			})
+		if !exists {
+			albums = append(albums, albumType)
 		}
 	}
-	log(COMPLETE, "Songs sorted successfully!", false)
-
-	log(ATTEMPT, "Returning JSON-formatted result.", false)
-	var albumsBytes, _ = json.Marshal(albums)
-	var albumsBuffer *bytes.Buffer = bytes.NewBuffer(albumsBytes)
 
 	w.Header().Set("Content-Type", "application/json")
-	io.CopyBuffer(w, albumsBuffer, make([]byte, 3072))
-	log(COMPLETE, "Albums returned successfully!", true)
+	var content, err2 = json.Marshal(albums)
+	if err2 != nil {
+		log(ERROR, "An error occured while trying to write albums to user.", true)
+		return
+	}
+	var contentBuffer *bytes.Buffer = bytes.NewBuffer(content)
+	io.CopyBuffer(w, contentBuffer, make([]byte, 3072))
+	log(COMPLETE, "Returned all albums!", true)
+}
+
+func http_getAlbum(w http.ResponseWriter, r *http.Request) {
+	if !check_allowed(r) || !check_auth(r) {
+		return
+	}
+	log(ATTEMPT, "Attempt to get album info initiated.", false)
+
+	defer r.Body.Close()
+	var body, err = io.ReadAll(r.Body)
+	if err != nil {
+		log(ERROR, "An error occured while trying to read request body.", true)
+		return
+	}
+	var args struct {
+		Album       string `json:"album"`
+		AlbumArtist string `json:"album-artist"`
+	}
+	json.Unmarshal(body, &args)
+
+	var ysDB, err1 = sql.Open("sqlite3", filepath.Join(ys_savePath, r.URL.Query().Get("username"), ".db"))
+	if err1 != nil {
+		log(ERROR, "A system error occured while trying to open yrSound database.", true)
+		return
+	}
+	defer ysDB.Close()
+
+	var album, err2 = ysDB.Query(`select * from songs where album=? AND albumArtist=?`, args.Album, args.AlbumArtist)
+	if err2 != nil {
+		log(ERROR, "An error occured while trying to get album's songs", true)
+		return
+	}
+	defer album.Close()
+
+	var songs []SongwID
+	for album.Next() {
+		var id, year, track, disc int
+		var file_path, title, artist, Album, albumArtist string
+
+		album.Scan(&id, &file_path, &title, &artist, &Album, &albumArtist, &year, &track, &disc)
+		songs = append(songs, SongwID{
+			ID:          id,
+			FilePath:    file_path,
+			Title:       title,
+			Artist:      artist,
+			Album:       Album,
+			AlbumArtist: albumArtist,
+			Year:        year,
+			Track:       track,
+			Disc:        disc,
+		})
+	}
+
+	var songsByte, err3 = json.Marshal(songs)
+	if err3 != nil {
+		log(ERROR, "An error occured while trying to encode songs to JSON.", true)
+		return
+	}
+	var songsBuffer *bytes.Buffer = bytes.NewBuffer(songsByte)
+	w.Header().Set("Content-Type", "application/json")
+	io.CopyBuffer(w, songsBuffer, make([]byte, 3072))
+	log(COMPLETE, "Successfully returned songs from the album!", true)
 }
 
 func http_getSongs(w http.ResponseWriter, r *http.Request) {
 	if !check_allowed(r) || !check_auth(r) {
 		return
 	}
-	log(ATTEMPT, "Attempt to get all songs initiated.", false)
+	log(ATTEMPT, "Attempt to get all songs initiated", false)
 
-	var songs []Song
-	var err error = Index(filepath.Join(ys_savePath, r.URL.Query().Get("username")), &songs)
+	var ysDB, err = sql.Open("sqlite3", filepath.Join(ys_savePath, r.URL.Query().Get("username"), ".db"))
 	if err != nil {
-		log(ERROR, "An error occured while trying to get song names.", true)
+		log(ERROR, "An error occured while trying to open yrSound database.", true)
+		return
+	}
+	defer ysDB.Close()
+
+	var rows, err1 = ysDB.Query(`select * from songs`)
+	if err1 != nil {
+		log(ERROR, "An error occured while trying to get all songs.", true)
+		return
+	}
+	defer rows.Close()
+
+	var songs []SongwID
+	for rows.Next() {
+		var id, year, track, disc int
+		var file_path, title, artist, album, albumArtist string
+
+		var err2 error = rows.Scan(&id, &file_path, &title, &artist, &album, &albumArtist, &year, &track, &disc)
+		if err2 != nil {
+			log(ERROR, "An error occured while trying to get song values.", true)
+			return
+		}
+
+		songs = append(songs, SongwID{
+			ID:          id,
+			FilePath:    file_path,
+			Title:       title,
+			Artist:      artist,
+			Album:       album,
+			AlbumArtist: albumArtist,
+			Year:        year,
+			Track:       track,
+			Disc:        disc,
+		})
 	}
 
-	log(COMPLETE, "Got all songs!", false)
-	log(ATTEMPT, "Returning songs list.", false)
-
-	var songsBytes, _ = json.Marshal(songs)
-	var songsBuffer *bytes.Buffer = bytes.NewBuffer(songsBytes)
-
 	w.Header().Set("Content-Type", "application/json")
+	var songsByte, err3 = json.Marshal(songs)
+	if err3 != nil {
+		log(ERROR, "An error occured while trying to encode songs to JSON.", true)
+		return
+	}
+	var songsBuffer *bytes.Buffer = bytes.NewBuffer(songsByte)
 	io.CopyBuffer(w, songsBuffer, make([]byte, 3072))
-	log(COMPLETE, "Songs returned successfully!", true)
+
+	log(COMPLETE, "Returned all songs successfully!", true)
+}
+
+func http_getArtists(w http.ResponseWriter, r *http.Request) {
+	if !check_allowed(r) || !check_auth(r) {
+		return
+	}
+	log(ATTEMPT, "Attempt to all artists initiated.", false)
+
+	var ysDB, err = sql.Open("sqlite3", filepath.Join(ys_savePath, r.URL.Query().Get("username"), ".db"))
+	if err != nil {
+		log(ERROR, "An error occured while trying to open yrSound database.", true)
+		return
+	}
+	defer ysDB.Close()
+
+	var artists []string
+	var rows, err2 = ysDB.Query(`select artist from songs`)
+	if err2 != nil {
+		log(ERROR, "An error occured while trying to get artists.", true)
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var artist string
+		rows.Scan(&artist)
+
+		var exists bool = false
+		for _, v := range artists {
+			if artist == v {
+				exists = true
+			}
+		}
+		if !exists {
+			artists = append(artists, artist)
+		}
+	}
+
+	var artistsByte, err1 = json.Marshal(artists)
+	if err1 != nil {
+		log(ERROR, "An error occured while trying to encode artists to JSON.", true)
+		return
+	}
+	var artistsBuffer *bytes.Buffer = bytes.NewBuffer(artistsByte)
+	w.Header().Set("Content-Type", "application/json")
+	io.CopyBuffer(w, artistsBuffer, make([]byte, 3072))
+
+	log(COMPLETE, "All artists successfully returned!", true)
+}
+
+func http_getSongInfo(w http.ResponseWriter, r *http.Request) {
+	if !check_allowed(r) || !check_auth(r) {
+		return
+	}
+	log(ATTEMPT, "Attempt to get song info initiated.", false)
+	var id, _ = strconv.Atoi(r.URL.Query().Get("id"))
+
+	var ysDB, err = sql.Open("sqlite3", filepath.Join(ys_savePath, r.URL.Query().Get("username"), ".db"))
+	if err != nil {
+		log(ERROR, "A system error occured while trying to open yrSound database.", true)
+		return
+	}
+	defer ysDB.Close()
+
+	var song, err1 = ysDB.Query(`select * from songs where id=?`, id)
+	if err1 != nil {
+		log(ERROR, "An error occured while trying to search for song.", true)
+		return
+	}
+	defer ysDB.Close()
+
+	if song.Next() {
+		var id, year, track, disc int
+		var file_path, title, artist, album, albumArtist string
+		var err3 error = song.Scan(&id, &file_path, &title, &artist, &album, &albumArtist, &year, &track, &disc)
+		if err3 != nil {
+			log(ERROR, "An error occured while trying to get song info.", true)
+			return
+		}
+
+		var songByte, err2 = json.Marshal(Song{
+			FilePath:    file_path,
+			Title:       title,
+			Artist:      artist,
+			Album:       album,
+			AlbumArtist: albumArtist,
+			Year:        year,
+			Track:       track,
+			Disc:        disc,
+		})
+		if err2 != nil {
+			log(ERROR, "An error occured while trying to convert song to JSON format", true)
+			return
+		}
+		var songBuffer *bytes.Buffer = bytes.NewBuffer(songByte)
+		w.Header().Set("Content-Type", "application/json")
+		io.CopyBuffer(w, songBuffer, make([]byte, 3072))
+		log(COMPLETE, "Returned song info successfully.", true)
+	} else {
+		log(ERROR, "Could not find song.", true)
+		return
+	}
+}
+
+func http_getSongBlob(w http.ResponseWriter, r *http.Request) {
+	if !check_allowed(r) || !check_auth(r) {
+		return
+	}
+	log(ATTEMPT, "Attempt to get song blob initiated.", false)
+
+	var ysDB, err = sql.Open("sqlite3", filepath.Join(ys_savePath, r.URL.Query().Get("username"), ".db"))
+	if err != nil {
+		log(ERROR, "A system error occured while trying to open yrSound database.", true)
+		return
+	}
+	defer ysDB.Close()
+
+	var id, _ = strconv.Atoi(r.URL.Query().Get("id"))
+	var song, err1 = ysDB.Query(`select filepath from songs where id=?`, id)
+	if err1 != nil {
+		log(ERROR, "An error occured while trying to get song's file path.", true)
+		return
+	}
+	defer song.Close()
+
+	if song.Next() {
+		var file_path string
+		var err error = song.Scan(&file_path)
+		if err != nil {
+			log(ERROR, "An error occured while trying to get song's file path.", true)
+			return
+		}
+
+		var songFile, err1 = os.Open(file_path)
+		if err1 != nil {
+			log(ERROR, "An error occured while trying to open song.", true)
+			return
+		}
+		defer songFile.Close()
+
+		var songBytes, err2 = io.ReadAll(songFile)
+		if err2 != nil {
+			log(ERROR, "An error occured while trying to read song.", true)
+			return
+		}
+		songFile.Seek(0, io.SeekStart)
+		w.Header().Set("Content-Type", http.DetectContentType(songBytes[:600]))
+		io.CopyBuffer(w, songFile, make([]byte, 3072))
+
+		log(COMPLETE, "Returned song blob successfully!", true)
+	} else {
+		log(ERROR, "Couldn't find song.", true)
+	}
 }

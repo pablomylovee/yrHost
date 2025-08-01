@@ -14,6 +14,7 @@ const (
 	ERROR    int = 0
 	ATTEMPT  int = 1
 	COMPLETE int = 2
+	STEP     int = 3
 )
 
 func log(logType int, content string, addSeparator bool) bool {
@@ -24,6 +25,8 @@ func log(logType int, content string, addSeparator bool) bool {
 		fmt.Printf("%s>> %s%s\n", BLUE, RESET, content)
 	case COMPLETE:
 		fmt.Printf("%s>> %s%s\n", GREEN, RESET, content)
+	case STEP:
+		fmt.Printf("	%s•%s %s", CYAN, RESET, content)
 	default:
 		return false
 	}

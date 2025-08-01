@@ -44,7 +44,7 @@ func http_deleteFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := os.RemoveAll(ts_filePath); err != nil {
-		log(ERROR, "A system error occured while attempting to remove '"+ts_filePath+"'.", true)
+		log(ERROR, "A system error occured while attempting to remove '"+ts_filePath+"'\n	error: "+err.Error()+".", true)
 		w.WriteHeader(http.StatusForbidden)
 		return
 	} else {

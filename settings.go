@@ -22,7 +22,11 @@ type UserPreferences struct {
 		SavePath string `json:"save-path"`
 	} `json:"yrFiles"`
 	YrSound struct {
-		SavePath string `json:"save-path"`
+		SavePath       string `json:"save-path"`
+		ArtistPictures []struct {
+			Name string `json:"name"`
+			Path string `json:"path"`
+		} `json:"artist-pictures"`
 	} `json:"yrSound"`
 }
 

@@ -48,3 +48,110 @@ html, body {
 	margin: 0; padding: 0; display: none;
 	animation: fade 250ms ease forwards;
 }
+
+#sidebar {
+	width: 20%; height: 100%; display: flex;
+	align-items: center; padding: 8px;
+	background-color: #383838; color: #fff;
+	flex-direction: column; gap: 4px;
+}
+#sidebar > button, #sidebar > span { width: 100%; font-size: 14px; padding-left: 6px; padding-right: 6px; }
+#sidebar > span {
+	font-weight: bolder; font-size: 16px; margin-bottom: 2px;
+}
+
+#sidebar > button {
+	height: 30px; background-color: transparent; color: #fff;
+	transition: background-color 150ms ease; text-align: left;
+	cursor: pointer; border-radius: 4px; border-style: none;
+	display: flex; align-items: center; gap: 6px;
+}
+#sidebar > button:hover {
+	background-color: #424242;
+}
+
+#albums, #artists {
+	flex: 1; width: 100%; gap: 8px;
+	overflow-y: scroll; overflow-x: hidden;
+	padding: 5px; display: none; flex-wrap: wrap;
+	align-items: flex-start; justify-content: center;
+}
+#songs {
+	flex: 1; width: 100%; gap: 8px;
+	overflow-y: scroll; overflow-x: hidden;
+	padding: 5px; display: flex; flex-wrap: nowrap;
+	align-items: center; flex-direction: column;
+}
+#albums::-webkit-scrollbar { display: none; }
+#artists::-webkit-scrollbar { display: none; }
+#songs::-webkit-scrollbar { display: none; }
+
+.artist {
+	width: 230px; aspect-ratio: 1/1;
+	border-radius: 8px; overflow: hidden;
+	padding-top: 8px; padding-bottom: 8px;
+	display: flex; justify-content: center;
+	cursor: pointer; flex-direction: column;
+	transition: background-color 200ms ease;
+	align-items: center;
+}
+.artist:hover {
+	background-color: #333;
+}
+.artist div {
+	width: 180px; aspect-ratio: 1/1; 
+    overflow: hidden; margin-bottom: 16px;
+	border-radius: 16px; display: flex;
+	background-color: #464646;
+	justify-content: center;
+	align-items: center;
+}
+.artist div img {
+	height: 100%
+}
+
+.artist span {
+	font-size: 18px; font-weight: bold;
+}
+
+.album {
+	width: 230px; aspect-ratio: 1/1;
+	border-radius: 8px; overflow: hidden;
+	display: flex; align-items: center;
+	justify-content: center;
+	background-color: #3a3a3a;
+	position: relative;
+	cursor: pointer;
+}
+.album img {
+	height: 100%;
+}
+.album > div {
+	width: 100%; height: 60px;
+	background-color: rgba(0, 0, 0, 0.7);
+	position: absolute; bottom: -60px;
+	transition: bottom 220ms ease; gap: 4px;
+	display: flex; justify-content: center;
+	flex-direction: column; align-items: center;
+}
+.album > div > h3 { margin: 0; }
+
+.song {
+	width: calc(100% - 30px); height: 40px; border-radius: 8px;
+	padding: 8px; padding-left: 12px; padding-right: 12px;
+	cursor: pointer; display: flex; gap: 8px; align-items: center;
+	background-color: #333; transition: background-color 200ms ease;
+	flex-shrink: 0;
+}
+.song:hover {
+	background-color: #444;
+}
+
+.song > div {
+	height: 100%; aspect-ratio: 1/1; background-color: #3a3a3a;
+	display: flex; align-items: center; justify-content: center;
+	overflow: hidden; border-radius: 5px;
+}
+.song > div > img {
+	height: 100%;
+}

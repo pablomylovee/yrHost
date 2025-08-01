@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"embed"
 	"fmt"
 	"io/fs"
@@ -10,6 +11,8 @@ import (
 	"path/filepath"
 	"slices"
 	"strconv"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 var filePath string
@@ -47,32 +50,65 @@ func check_auth(r *http.Request) bool {
 	var username string = r.URL.Query().Get("username")
 	var password string = r.URL.Query().Get("password")
 
-	if username == "" || password == "" {
-		return false
-	}
-
 	for _, user := range get_settings().Users {
-		if !(user.Username == username) || !(user.Password == password) {
-			return false
+		if (user.Username == username) && (user.Password == password) {
+			return true
 		}
 	}
 
-	return true
+	return false
 }
 
 func main() {
 	filePath, _ = filepath.Abs(".")
 
+	log(ATTEMPT, "Initializing services for `yrHost`...", false)
 	for _, user := range get_settings().Users {
 		if slices.Contains(get_settings().Services, "files") {
+			log(STEP, "Preparing `yrFiles`...\n", false)
 			os.Mkdir(filepath.Join(yf_savePath, user.Username), 0755)
 		}
 		if slices.Contains(get_settings().Services, "sound") {
+			log(STEP, "Preparing `yrSound`...\n", false)
 			os.Mkdir(filepath.Join(ys_savePath, user.Username), 0755)
+			os.Mkdir(filepath.Join(ys_savePath, user.Username, "picture"), 0755)
+			var songs []Song
+			var err error = Index(filepath.Join(ys_savePath, user.Username), &songs)
+			if err != nil {
+				log(ERROR, "An error occured while trying to index all songs for `yrSound`.", true)
+				return
+			}
+			var ysDB, _ = sql.Open("sqlite3", filepath.Join(ys_savePath, user.Username, ".db"))
+			defer ysDB.Close()
+			ysDB.Exec(`
+				drop table if exists songs;
+				create table if not exists songs (
+					id INTEGER PRIMARY KEY,
+					filepath TEXT,
+					title TEXT,
+					artist TEXT,
+					album TEXT,
+					albumArtist TEXT,
+					year INTEGER,
+					track INTEGER,
+					disc INTEGER
+				);
+			`)
+			for _, song := range songs {
+				ysDB.Exec(`
+					insert or ignore into songs (
+						filepath, title, artist, album, albumArtist, year, track, disc
+					) values (?, ?, ?, ?, ?, ?, ?, ?)
+				`,
+					song.FilePath, song.Title, song.Artist, song.Album,
+					song.AlbumArtist, song.Year, song.Track,
+					song.Disc,
+				)
+			}
 		}
 	}
 
-	fmt.Println(BLUE + "Initializing " + PINK + "listener..." + RESET)
+	log(ATTEMPT, "Initializing listener...", false)
 	var listener, err = net.Listen("tcp", ":"+strconv.Itoa(get_settings().Port))
 	if err != nil {
 		fmt.Println(RED+"ERROR while initializing listener:", err.Error())
@@ -129,8 +165,13 @@ func main() {
 			http.StripPrefix("/yrSound/", http.FileServer(http.FS(yrSoundSub))).ServeHTTP(w, r)
 		})
 		http.HandleFunc("/get-cover", http_getCover)
+		http.HandleFunc("/get-id", http_getID)
 		http.HandleFunc("/get-albums", http_getAlbums)
+		http.HandleFunc("/get-album", http_getAlbum)
 		http.HandleFunc("/get-songs", http_getSongs)
+		http.HandleFunc("/get-artists", http_getArtists)
+		http.HandleFunc("/get-song-info", http_getSongInfo)
+		http.HandleFunc("/get-song-blob", http_getSongBlob)
 	}
 
 	// log for start
