@@ -57,7 +57,7 @@ But, if you followed the Unchad way (downloading the executable w/ `config.json`
 	"ip-blacklist": [], (IP addresses that can't use your server)
 	"ip-whitelist": [], (the only IP addresses that can use your server)
 	"services": ["files", "sound"], (the services to use, only "files" and "sound" are available)
-	"users": [ (the users for your server, leave empty if you want a login free server)
+	"users": [ (the users for your server, at least 1 is required)
 		{
 			"username": "root", "password": "root"
 		}
