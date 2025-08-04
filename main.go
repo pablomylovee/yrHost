@@ -101,8 +101,7 @@ func main() {
 					) values (?, ?, ?, ?, ?, ?, ?, ?)
 				`,
 					song.FilePath, song.Title, song.Artist, song.Album,
-					song.AlbumArtist, song.Year, song.Track,
-					song.Disc,
+					song.AlbumArtist, song.Year, song.Track, song.Disc,
 				)
 			}
 		}

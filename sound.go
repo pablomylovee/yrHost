@@ -71,12 +71,33 @@ func Index(path string, songsSlice *[]Song) error {
 				}
 				var discn, _ = songRaw.Disc()
 				var trackn, _ = songRaw.Track()
+				var title, artist, album, albumArtist string
+				if songRaw.Title() != "" {
+					title = songRaw.Title()
+				} else {
+					title = v.Name()
+				}
+				if songRaw.Artist() != "" {
+					artist = songRaw.Artist()
+				} else {
+					artist = "Unknown artist"
+				}
+				if songRaw.Album() != "" {
+					album = songRaw.Album()
+				} else {
+					album = "Unknown album"
+				}
+				if songRaw.AlbumArtist() != "" {
+					albumArtist = songRaw.AlbumArtist()
+				} else {
+					albumArtist = "Unknown artist"
+				}
 				*songsSlice = append(*songsSlice, Song{
 					FilePath:    filepath.Join(path, v.Name()),
-					Title:       songRaw.Title(),
-					Artist:      songRaw.Artist(),
-					Album:       songRaw.Album(),
-					AlbumArtist: songRaw.AlbumArtist(),
+					Title:       title,
+					Artist:      artist,
+					Album:       album,
+					AlbumArtist: albumArtist,
 					Year:        songRaw.Year(),
 					Disc:        discn,
 					Track:       trackn,
@@ -102,12 +123,14 @@ func http_getCover(w http.ResponseWriter, r *http.Request) {
 	var ysDB, err = sql.Open("sqlite3", filepath.Join(ys_savePath, username, ".db"))
 	if err != nil {
 		log(ERROR, "An error occured while trying to open yrSound database.", true)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	defer ysDB.Close()
 	var song, err1 = ysDB.Query(`select title, artist, filepath from songs where id=?`, id)
 	if err1 != nil {
 		log(ERROR, "An error occured while trying to find song.", true)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	defer song.Close()
@@ -119,22 +142,31 @@ func http_getCover(w http.ResponseWriter, r *http.Request) {
 		var file, err3 = os.Open(file_path)
 		if err3 != nil {
 			log(ERROR, "A system error occured while trying to open song file.", true)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 		defer file.Close()
 		var songMD, err2 = tag.ReadFrom(file)
 		if err2 != nil {
 			log(ERROR, "A system error occured while tring to open song file.", true)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		w.Header().Set("Content-Type", http.DetectContentType(songMD.Picture().Data[:600]))
-		var picbuffer *bytes.Buffer = bytes.NewBuffer(songMD.Picture().Data)
-		io.CopyBuffer(w, picbuffer, make([]byte, 3072))
+		if songMD.Picture() != nil {
+			var mimetype string = http.DetectContentType(songMD.Picture().Data[:600])
+			w.Header().Set("Content-Type", mimetype)
+			var picbuffer *bytes.Buffer = bytes.NewBuffer(songMD.Picture().Data)
+			io.CopyBuffer(w, picbuffer, make([]byte, 3072))
+		} else {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
 
 		log(COMPLETE, "Returned song cover successfully!", true)
 	} else {
 		log(ERROR, "Couldn't find song.", true)
+		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 }
@@ -149,6 +181,7 @@ func http_getID(w http.ResponseWriter, r *http.Request) {
 	var body, err = io.ReadAll(r.Body)
 	if err != nil {
 		log(ERROR, "An error occured while trying to read request body.", true)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
@@ -164,6 +197,7 @@ func http_getID(w http.ResponseWriter, r *http.Request) {
 	var ysDB, err1 = sql.Open("sqlite3", filepath.Join(ys_savePath, username, ".db"))
 	if err1 != nil {
 		log(ERROR, "A system error occured while trying to open yrSound database.", true)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	defer ysDB.Close()
@@ -173,6 +207,7 @@ func http_getID(w http.ResponseWriter, r *http.Request) {
 	)
 	if err2 != nil {
 		log(ERROR, "A system error occured while trying to search for song ID.", true)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	defer song.Close()
@@ -190,6 +225,7 @@ func http_getID(w http.ResponseWriter, r *http.Request) {
 		log(COMPLETE, "Song ID returned!", true)
 	} else {
 		log(ERROR, "Could not find song.", true)
+		w.WriteHeader(http.StatusNotFound)
 	}
 }
 
@@ -202,6 +238,7 @@ func http_getAlbums(w http.ResponseWriter, r *http.Request) {
 	var ysDB, err = sql.Open("sqlite3", filepath.Join(ys_savePath, r.URL.Query().Get("username"), ".db"))
 	if err != nil {
 		log(ERROR, "A system error occured while trying to open yrSound database.", true)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	defer ysDB.Close()
@@ -210,6 +247,7 @@ func http_getAlbums(w http.ResponseWriter, r *http.Request) {
 	var query, err1 = ysDB.Query(`select album, albumArtist, year from songs`)
 	if err1 != nil {
 		log(ERROR, "A system error occured while trying to get albums from database.", true)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	defer query.Close()
@@ -220,6 +258,7 @@ func http_getAlbums(w http.ResponseWriter, r *http.Request) {
 		var err3 error = query.Scan(&album, &albumArtist, &year)
 		if err3 != nil {
 			log(ERROR, "An error occured while getting albums.", true)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 		var albumType Album = Album{
@@ -243,6 +282,7 @@ func http_getAlbums(w http.ResponseWriter, r *http.Request) {
 	var content, err2 = json.Marshal(albums)
 	if err2 != nil {
 		log(ERROR, "An error occured while trying to write albums to user.", true)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	var contentBuffer *bytes.Buffer = bytes.NewBuffer(content)
@@ -260,6 +300,7 @@ func http_getAlbum(w http.ResponseWriter, r *http.Request) {
 	var body, err = io.ReadAll(r.Body)
 	if err != nil {
 		log(ERROR, "An error occured while trying to read request body.", true)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	var args struct {
@@ -271,6 +312,7 @@ func http_getAlbum(w http.ResponseWriter, r *http.Request) {
 	var ysDB, err1 = sql.Open("sqlite3", filepath.Join(ys_savePath, r.URL.Query().Get("username"), ".db"))
 	if err1 != nil {
 		log(ERROR, "A system error occured while trying to open yrSound database.", true)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	defer ysDB.Close()
@@ -278,6 +320,7 @@ func http_getAlbum(w http.ResponseWriter, r *http.Request) {
 	var album, err2 = ysDB.Query(`select * from songs where album=? AND albumArtist=?`, args.Album, args.AlbumArtist)
 	if err2 != nil {
 		log(ERROR, "An error occured while trying to get album's songs", true)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	defer album.Close()
@@ -304,6 +347,7 @@ func http_getAlbum(w http.ResponseWriter, r *http.Request) {
 	var songsByte, err3 = json.Marshal(songs)
 	if err3 != nil {
 		log(ERROR, "An error occured while trying to encode songs to JSON.", true)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	var songsBuffer *bytes.Buffer = bytes.NewBuffer(songsByte)
@@ -321,6 +365,7 @@ func http_getSongs(w http.ResponseWriter, r *http.Request) {
 	var ysDB, err = sql.Open("sqlite3", filepath.Join(ys_savePath, r.URL.Query().Get("username"), ".db"))
 	if err != nil {
 		log(ERROR, "An error occured while trying to open yrSound database.", true)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	defer ysDB.Close()
@@ -328,6 +373,7 @@ func http_getSongs(w http.ResponseWriter, r *http.Request) {
 	var rows, err1 = ysDB.Query(`select * from songs`)
 	if err1 != nil {
 		log(ERROR, "An error occured while trying to get all songs.", true)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	defer rows.Close()
@@ -340,10 +386,11 @@ func http_getSongs(w http.ResponseWriter, r *http.Request) {
 		var err2 error = rows.Scan(&id, &file_path, &title, &artist, &album, &albumArtist, &year, &track, &disc)
 		if err2 != nil {
 			log(ERROR, "An error occured while trying to get song values.", true)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		songs = append(songs, SongwID{
+		var song SongwID = SongwID{
 			ID:          id,
 			FilePath:    file_path,
 			Title:       title,
@@ -353,13 +400,17 @@ func http_getSongs(w http.ResponseWriter, r *http.Request) {
 			Year:        year,
 			Track:       track,
 			Disc:        disc,
-		})
+		}
+		fmt.Println(song)
+		songs = append(songs, song)
 	}
+	fmt.Println(songs)
 
 	w.Header().Set("Content-Type", "application/json")
 	var songsByte, err3 = json.Marshal(songs)
 	if err3 != nil {
 		log(ERROR, "An error occured while trying to encode songs to JSON.", true)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	var songsBuffer *bytes.Buffer = bytes.NewBuffer(songsByte)
@@ -377,6 +428,7 @@ func http_getArtists(w http.ResponseWriter, r *http.Request) {
 	var ysDB, err = sql.Open("sqlite3", filepath.Join(ys_savePath, r.URL.Query().Get("username"), ".db"))
 	if err != nil {
 		log(ERROR, "An error occured while trying to open yrSound database.", true)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	defer ysDB.Close()
@@ -385,6 +437,7 @@ func http_getArtists(w http.ResponseWriter, r *http.Request) {
 	var rows, err2 = ysDB.Query(`select artist from songs`)
 	if err2 != nil {
 		log(ERROR, "An error occured while trying to get artists.", true)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	defer rows.Close()
@@ -406,6 +459,7 @@ func http_getArtists(w http.ResponseWriter, r *http.Request) {
 	var artistsByte, err1 = json.Marshal(artists)
 	if err1 != nil {
 		log(ERROR, "An error occured while trying to encode artists to JSON.", true)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	var artistsBuffer *bytes.Buffer = bytes.NewBuffer(artistsByte)
@@ -425,6 +479,7 @@ func http_getSongInfo(w http.ResponseWriter, r *http.Request) {
 	var ysDB, err = sql.Open("sqlite3", filepath.Join(ys_savePath, r.URL.Query().Get("username"), ".db"))
 	if err != nil {
 		log(ERROR, "A system error occured while trying to open yrSound database.", true)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	defer ysDB.Close()
@@ -432,6 +487,7 @@ func http_getSongInfo(w http.ResponseWriter, r *http.Request) {
 	var song, err1 = ysDB.Query(`select * from songs where id=?`, id)
 	if err1 != nil {
 		log(ERROR, "An error occured while trying to search for song.", true)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	defer ysDB.Close()
@@ -442,6 +498,7 @@ func http_getSongInfo(w http.ResponseWriter, r *http.Request) {
 		var err3 error = song.Scan(&id, &file_path, &title, &artist, &album, &albumArtist, &year, &track, &disc)
 		if err3 != nil {
 			log(ERROR, "An error occured while trying to get song info.", true)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
@@ -457,6 +514,7 @@ func http_getSongInfo(w http.ResponseWriter, r *http.Request) {
 		})
 		if err2 != nil {
 			log(ERROR, "An error occured while trying to convert song to JSON format", true)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 		var songBuffer *bytes.Buffer = bytes.NewBuffer(songByte)
@@ -465,6 +523,7 @@ func http_getSongInfo(w http.ResponseWriter, r *http.Request) {
 		log(COMPLETE, "Returned song info successfully.", true)
 	} else {
 		log(ERROR, "Could not find song.", true)
+		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 }
@@ -478,6 +537,7 @@ func http_getSongBlob(w http.ResponseWriter, r *http.Request) {
 	var ysDB, err = sql.Open("sqlite3", filepath.Join(ys_savePath, r.URL.Query().Get("username"), ".db"))
 	if err != nil {
 		log(ERROR, "A system error occured while trying to open yrSound database.", true)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	defer ysDB.Close()
@@ -486,6 +546,7 @@ func http_getSongBlob(w http.ResponseWriter, r *http.Request) {
 	var song, err1 = ysDB.Query(`select filepath from songs where id=?`, id)
 	if err1 != nil {
 		log(ERROR, "An error occured while trying to get song's file path.", true)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	defer song.Close()
@@ -495,12 +556,14 @@ func http_getSongBlob(w http.ResponseWriter, r *http.Request) {
 		var err error = song.Scan(&file_path)
 		if err != nil {
 			log(ERROR, "An error occured while trying to get song's file path.", true)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
 		var songFile, err1 = os.Open(file_path)
 		if err1 != nil {
 			log(ERROR, "An error occured while trying to open song.", true)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 		defer songFile.Close()
@@ -508,6 +571,7 @@ func http_getSongBlob(w http.ResponseWriter, r *http.Request) {
 		var songBytes, err2 = io.ReadAll(songFile)
 		if err2 != nil {
 			log(ERROR, "An error occured while trying to read song.", true)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 		songFile.Seek(0, io.SeekStart)
@@ -517,5 +581,6 @@ func http_getSongBlob(w http.ResponseWriter, r *http.Request) {
 		log(COMPLETE, "Returned song blob successfully!", true)
 	} else {
 		log(ERROR, "Couldn't find song.", true)
+		w.WriteHeader(http.StatusNotFound)
 	}
 }

@@ -88,7 +88,12 @@ const playSong = (id) => {
 
 		rawIMG.onload = () => {
 			cover.style.aspectRatio = `${rawIMG.naturalWidth} / ${rawIMG.naturalHeight}`;
+			cover.style.width = "auto";
 		}
+	}).catch(() => {
+		cover.src = "./vectors/song.svg";
+		cover.style.aspectRatio = "1/1";
+		cover.style.width = "32px";
 	});
 }
 
@@ -136,7 +141,12 @@ const showAllAlbums = async() => {
 						albumIMG.style.aspectRatio = `${rawIMG.naturalWidth} / ${rawIMG.naturalHeight}`
 						albumDiv.appendChild(albumIMG);
 					}
-				})
+				}).catch(() => {
+					albumIMG.src = "./vectors/song.svg";
+					albumIMG.style.aspectRatio = "1/1";
+					albumIMG.style.width = "64px";
+					albumDiv.appendChild(albumIMG);
+				});
 			});
 			const albumInfoDiv = document.createElement("div");
 			albumDiv.appendChild(albumInfoDiv);
@@ -257,6 +267,11 @@ const showAllSongs = async() => {
 					songIMG.style.aspectRatio = `${rawIMG.naturalWidth} / ${rawIMG.naturalHeight}`;
 					songIMGCont.appendChild(songIMG);
 				}
+			}).catch(() => {
+				songIMG.src = "./vectors/song.svg";
+				songIMG.style.aspectRatio = "1/1";
+				songIMG.style.width = "24px";
+				songIMGCont.appendChild(songIMG);
 			});
 		
 			const songInfo = document.createElement("div");
