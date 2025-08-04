@@ -39,6 +39,7 @@ or
 git clone "https://github.com/PabloMyDarling/yrHost.git"; cd yrHost; go run .
 ```
 These 2 commands work on all platforms.  
+**NOTE:** You also need `gcc`, or `clang` if you're on a UNIX/Linux based system.
 # Customizing
 If you followed the Chad way (cloning and running the repo), you can edit the files inside the `yrHost` directory and type the following command every time you edit a file to your liking in the repo's directory.
 ```pwsh
