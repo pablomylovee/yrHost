@@ -53,18 +53,57 @@ const shortenName = (s, maxLength) => {
 	if (s.length > maxLength) return s.slice(0, maxLength)+"...";
 	else return s;	
 }
+const playSong = (id) => {
+	const cover = document.querySelector("#player > .simg-cont > img");
+	const title = document.querySelector("#player > .song-info > b");
+	const artist = document.querySelector("#player > .song-info > span");
+	const songBar = document.getElementById("song-bar");
+	const total = document.querySelector("#player > .song-info > .time > .total")
+
+	fetch(getFetchBall("get-song-info", `id=${id}`)).then(response => {
+		if (response.ok) return response.json();
+	}).then(response => {
+		title.textContent = response.title;
+		artist.textContent = response.artist;
+	});
+	fetch(getFetchBall("get-song-blob", `id=${id}`)).then(response => {
+		if (response.ok) return response.blob();
+	}).then(response => {
+		document.getElementById("song").src = URL.createObjectURL(response);
+		document.getElementById("song").load();
+		
+		const onload = () => {
+			songBar.min = "0"; songBar.value = "0";
+			songBar.max = `${document.getElementById("song").duration}`;
+			document.getElementById("song").play();
+			document.getElementById("song").removeEventListener("loadedmetadata", onload);
+		}
+		document.getElementById("song").addEventListener("loadedmetadata", onload);
+	});
+	fetch(getFetchBall("get-cover", `id=${id}`)).then(response => {
+		if (response.ok) return response.blob();
+	}).then(response => {
+		const rawIMG = new Image();
+		rawIMG.src = cover.src = URL.createObjectURL(response);
+
+		rawIMG.onload = () => {
+			cover.style.aspectRatio = `${rawIMG.naturalWidth} / ${rawIMG.naturalHeight}`;
+		}
+	});
+}
 
 let albumsClickable = true;
 let songsClickable = true;
 let artistsClickable = true;
-const showAllAlbums = () => {	
+let queue = [];
+const showAllAlbums = async() => {	
+	if (!albumsClickable) return;
 	for (const element of Array.from(document.getElementById("albums").childNodes)) element.remove();
 	
 	fetch(getFetchBall("get-albums"))
 	.then(response => {
 		if (response.ok) return response.json();
 	}).then(albums => {
-		if (!albumsClickable) return;
 		albumsClickable = false;
 		const content = document.getElementById("albums");
 		content.style.display = "flex";
@@ -120,14 +159,14 @@ const showAllAlbums = () => {
 	})
 }
 
-const showAllArtists = () => {
+const showAllArtists = async() => {
+	if (!artistsClickable) return;
 	for (const element of Array.from(document.getElementById("artists").childNodes)) element.remove();
 	
 	fetch(getFetchBall("get-artists"))
 	.then(response => {
 		if (response.ok) return response.json();
 	}).then(artists => {
-		if (!artistsClickable) return;
 		artistsClickable = false;
 		const content = document.getElementById("artists");
 		content.style.display = "flex";
@@ -177,14 +216,14 @@ const showAllArtists = () => {
 	})
 }
 
-const showAllSongs = () => {
+const showAllSongs = async() => {
+	if (!songsClickable) return;
 	for (const element of Array.from(document.getElementById("songs").childNodes)) element.remove();
 
 	fetch(getFetchBall("get-songs"))
 	.then(response => {
 		if (response.ok) return response.json();
 	}).then(songs => {
-		if (!songsClickable) return;
 		songsClickable = false;
 		const content = document.getElementById("songs");
 		content.style.display = "flex";
@@ -200,8 +239,11 @@ const showAllSongs = () => {
 			const songDiv = document.createElement("div");
 			songDiv.classList.add("song");
 			content.appendChild(songDiv);
-			
+		
+			songDiv.addEventListener("click", () => playSong(song.id));
+
 			const songIMGCont = document.createElement("div");
+			songIMGCont.classList.add("simg-cont");
 			songDiv.appendChild(songIMGCont);
 
 			const songIMG = document.createElement("img");
@@ -217,15 +259,97 @@ const showAllSongs = () => {
 				}
 			});
 		
-			const songSpan = document.createElement("span");
-			songSpan.style.display = "flex";
-			songSpan.style.gap = "4px";
-			songSpan.innerHTML = `${song.title}<span style="color: #999;">•</span>${song.artist}`
-			songDiv.appendChild(songSpan);
+			const songInfo = document.createElement("div");
+			songInfo.classList.add("sinfo");
+			songDiv.appendChild(songInfo);
+		
+			const songTitle = document.createElement("b");
+			songTitle.textContent = song.title;
+			songInfo.appendChild(songTitle);
+
+			const songArtist = document.createElement("span");
+			songArtist.textContent = song.artist;
+			songInfo.appendChild(songArtist);
 		}
 	})
 }
 
-document.getElementById("show-songs").addEventListener("click", showAllSongs);
-document.getElementById("show-artists").addEventListener("click", showAllArtists);
-document.getElementById("show-albums").addEventListener("click", showAllAlbums);
+let sidebaropened = false;
+const sidebar = document.getElementById("sidebar");
+const button = document.getElementById("sidebar-button");
+const icon = button.querySelector("img");
+
+const hideSidebar = () => {
+	sidebaropened = false;
+	sidebar.style.transform = "";
+	icon.src = "./vectors/hamburger-menu.svg";
+	button.style.top = "";
+	setTimeout(() => {
+		sidebar.style.display = "";
+	}, 400);
+}
+const showSidebar = () => {
+	sidebaropened = true;
+	sidebar.style.display = "flex";
+	sidebar.style.transform = "translateY(-100%)";
+	requestAnimationFrame(() => {
+		requestAnimationFrame(() => {
+			sidebar.style.transform = "translateY(0)";
+		});
+	});
+
+	icon.src = "./vectors/close.svg";
+	button.style.top = "360px";
+}
+button.addEventListener("click", () => sidebaropened? hideSidebar():showSidebar());
+document.getElementById("show-songs").addEventListener("click", () => {
+	hideSidebar();
+	showAllSongs();
+});
+document.getElementById("show-artists").addEventListener("click", () => {
+	hideSidebar();
+	showAllArtists();
+});
+document.getElementById("show-albums").addEventListener("click", () => {
+	hideSidebar();
+	showAllAlbums();
+});
+document.getElementById("song").addEventListener("loadedmetadata", () => {
+	const songBar = document.getElementById("song-bar");
+	songBar.max = document.getElementById("song").duration;
+});
+
+document.getElementById("song-bar").addEventListener("input", () => {
+	const songBar = document.getElementById("song-bar");
+	document.getElementById("song").currentTime = songBar.value;
+});
+
+document.getElementById("song").addEventListener("timeupdate", () => {
+	const songBar = document.getElementById("song-bar");
+	songBar.value = document.getElementById("song").currentTime;
+
+	const elapsed = document.querySelector("#player > .song-info > .time > .elapsed");
+	const minutes = Math.floor(document.getElementById("song").currentTime / 60);
+	const seconds = Math.floor(document.getElementById("song").currentTime % 60).toString().padStart(2, "0");
+	elapsed.textContent = `${minutes}:${seconds}`;
+
+	const total = document.querySelector("#player > .song-info > .time > .total");
+	const minutes1 = Math.floor(document.getElementById("song").duration / 60);
+	const seconds1 = Math.floor(document.getElementById("song").duration % 60).toString().padStart(2, "0");
+	total.textContent = `${minutes1}:${seconds1}`;
+});
+
+document.getElementById("song").addEventListener("play", () => {
+	const play = document.getElementById("play");
+	play.querySelector("img").src = "./vectors/pause.svg";
+});
+document.getElementById("song").addEventListener("pause", () => {
+	const play = document.getElementById("play");
+	play.querySelector("img").src = "./vectors/play.svg";
+});
+
+document.getElementById("play").addEventListener("click", () => {
+	document.getElementById("song").paused?
+		document.getElementById("song").play():
+		document.getElementById("song").pause();
+});

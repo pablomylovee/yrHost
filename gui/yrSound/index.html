@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <audio id="song"></audio>
     <div id="authentication">
         <span>Login to see your music.</span>
         <input id="username-input" type="text" placeholder="Username here...">
@@ -14,12 +15,40 @@
         <button id="authenticateButton">Go!</button>
     </div>
     <div id="mainContent">
+        <button id="sidebar-button">
+            <img src="./vectors/hamburger-menu.svg" alt="Menu" width="32">
+        </button>
         <div id="sidebar">
             <h2>yrSound</h2>
             <span>Library</span>
             <button id="show-songs"><img src="./vectors/song.svg" alt="" width="22">Songs</button>
             <button id="show-artists"><img src="./vectors/artist.svg" alt="" width="22">Artists</button>
             <button id="show-albums"><img src="./vectors/album.svg" alt="" width="22">Albums</button>
+            <div id="player">
+                <div class="simg-cont">
+                    <img src="" alt="Album Cover">
+                </div>
+                <div class="song-info">
+                    <b>No song playing</b>
+                    <span>N/A</span>
+                    <div class="time">
+                        <span class="elapsed">0:00</span>
+                        <input type="range" id="song-bar" value="0">
+                        <span class="total">0:00</span>
+                    </div>
+                    <div id="controls">
+                        <button id="previous">
+                            <img src="./vectors/previous.svg" alt="Previous" width="14">
+                        </button>
+                        <button id="play">
+                            <img src="./vectors/play.svg" alt="Play song" width="14">
+                        </button>
+                        <button id="next">
+                            <img src="./vectors/next.svg" alt="Next" width="14">
+                        </button>
+                    </div>
+                </div>
+        </div>
         </div>
         <div id="albums"></div>
         <div id="artists"></div>

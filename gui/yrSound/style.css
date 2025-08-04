@@ -11,6 +11,14 @@
 		opacity: 1;
 	}
 }
+@keyframes comeIn {
+	from {
+		transform: translateY(-100%);
+	}	
+	to {
+		transform: translateY(0);
+	}	
+}
 
 /* styles */
 html, body {
@@ -44,16 +52,36 @@ html, body {
 }
 
 #mainContent {
-	width: 100%; height: 100%;
-	margin: 0; padding: 0; display: none;
-	animation: fade 250ms ease forwards;
+  margin-bottom: 100px;
+  width: 100%; height: 100%;
+  display: none; flex-direction: row;
+  animation: fade 250ms ease forwards;
 }
 
+#sidebar-button {
+	display: flex; align-items: center; justify-content: center;
+	position: fixed; right: 5px; top: 5px; border-radius: 8px;
+	padding: 6px; background-color: #484848; border-style: none;
+	cursor: pointer; box-shadow: 0 0 4px #666; transition: top 400ms ease;
+}
 #sidebar {
-	width: 20%; height: 100%; display: flex;
-	align-items: center; padding: 8px;
-	background-color: #383838; color: #fff;
-	flex-direction: column; gap: 4px;
+	width: calc(100% - 16px); display: none; height: 330px;
+	align-items: center; padding: 8px; border-radius: 16px;
+	background-color: #383838; color: #fff; border-top-right-radius: 0;
+	flex-direction: column; gap: 4px; border-top-left-radius: 0;
+	position: fixed; left: 0; box-shadow: 0 0 10px #bbb; z-index: 1000;
+	transition: transform 400ms ease; transform: translateY(-100%);
+}
+@media (min-width: 1030px) {
+	#sidebar {
+		display: flex; width: 20%; z-index: auto;
+		position: relative; height: auto;
+		box-shadow: none; border-radius: 0;
+		animation: none; transform: translateY(0);
+	}
+	#sidebar-button {
+		display: none;
+	}
 }
 #sidebar > button, #sidebar > span { width: 100%; font-size: 14px; padding-left: 6px; padding-right: 6px; }
 #sidebar > span {
@@ -68,6 +96,58 @@ html, body {
 }
 #sidebar > button:hover {
 	background-color: #424242;
+}
+
+#player {
+	position: absolute; bottom: 0;
+	height: 100px; display: flex;
+	background-color: #1f1f1f; gap: 8px;
+	width: calc(100% - 16px - 20px); margin: 10px;
+	justify-content: center;
+	align-items: center;
+	border-radius: 8px;
+	padding: 10px;
+}
+
+#player > .song-info {
+	flex: 1; display: flex;
+	flex-direction: column;
+}
+
+#player > .song-info > span {
+	font-size: 12px; color: #888;
+}
+
+#player > .song-info > .time {
+	display: flex; align-items: center;
+	justify-content: center; gap: 2px;
+	margin-bottom: 8px; margin-top: 8px;
+	font-size: 10px; width: 100%;
+}
+#player > .song-info > .time > input[type="range"] {
+	height: 5px; cursor: pointer; width: 100%;
+}
+
+#player > .simg-cont {
+	aspect-ratio: 1/1; height: 75px;
+	display: flex; align-items: center;
+	justify-content: center;
+	background-color: #444;
+	border-radius: 4px;
+	overflow: hidden;
+}
+#player > .simg-cont > img {
+	height: 100%;
+}
+
+#controls {
+	display: flex; align-items: center;
+	gap: 4px; width: 100%; justify-content: center;
+}
+#controls > button {
+	aspect-ratio: 1/1; padding: 2px; border-style: none;
+	display: flex; align-items: center; cursor: pointer;
+	justify-content: center; background-color: transparent;
 }
 
 #albums, #artists {
@@ -147,11 +227,23 @@ html, body {
 	background-color: #444;
 }
 
-.song > div {
+.song > .simg-cont {
 	height: 100%; aspect-ratio: 1/1; background-color: #3a3a3a;
 	display: flex; align-items: center; justify-content: center;
-	overflow: hidden; border-radius: 5px;
+	overflow: hidden; border-radius: 5px; flex-shrink: 0;
 }
 .song > div > img {
 	height: 100%;
+}
+
+.song > .sinfo {
+	height: 100%; display: flex; gap: 2px;
+	flex-direction: column; justify-content: center;
+}
+
+.song > .sinfo > b {
+	font-size: 16px;
+}
+.song > .sinfo > span {
+	font-size: 10px; color: #999;
 }
