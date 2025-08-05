@@ -66,8 +66,8 @@ But, if you followed the Unchad way (downloading the executable w/ `config.json`
 	"yrFiles": { (options for the "files" service)
 		"save-path": "D:" (path to save your files to, RECOMMEND: use a drive, not a folder)
 	},
-	"yrPics": { (options for the "pics" service)
-		"save-path": "E:" (path to save your photos to, RECOMMEND: use a drive, not a folder)
+	"yrSound": { (options for the "sound" service)
+		"save-path": "E:" (path to save your songs to, RECOMMEND: use a drive, not a folder)
 	}
 }
 ```
