@@ -91,7 +91,7 @@ export const get_files = (dir) => {
 		sessionStorage.setItem("current_dir", '');
 		pathspan.textContent = "~";
 	} else {
-		reach_to = getFetchBall('get-files', `dir=${encodeURIComponent(dir.toString())}`);
+		reach_to = getFetchBall(`get-files/${encodeURI(dir)}`);
 		sessionStorage.setItem("current_dir", dir);
 		pathspan.textContent = `~/${dir}`;
 	}
@@ -116,21 +116,37 @@ export const get_files = (dir) => {
 				entry_span.style.color = '#4499ff';
 				entry_span.style.fontWeight = "bolder";
 			}
+			const contextMenuButton = document.createElement("button");
+			const cmb_img = document.createElement("img");
+			cmb_img.src = "./vectors/options.svg";
+			cmb_img.width = "15";
+			contextMenuButton.appendChild(cmb_img);
+			const contextMenu = document.createElement("div");
+			contextMenu.classList.add("options");
 			const delete_button = document.createElement('button');
+			delete_button.textContent = `Delete`;
 			const delete_img = document.createElement("img");
 			delete_img.src = "./vectors/trash.svg";
-			delete_img.width = "25"; delete_img.height = "25";
+			delete_img.width = "23";
 			delete_button.appendChild(delete_img);
 			const rename_button = document.createElement('button');
+			rename_button.textContent = `Rename`;
 			const rename_img = document.createElement("img");
 			rename_img.src = "./vectors/rename.svg";
-			rename_img.width = "25"; rename_img.height = "25";
+			rename_img.width = "23";
 			rename_button.appendChild(rename_img);
 			const download_button = document.createElement('button');
+			download_button.textContent = `Download`;
 			const download_img = document.createElement("img");
 			download_img.src = "./vectors/download.svg";
-			download_img.width = "25";
+			download_img.width = "23";
 			download_button.appendChild(download_img);
+			const edit_button = document.createElement("button");
+			edit_button.textContent = "Edit with yrText";
+			const edit_img = document.createElement("img");
+			edit_img.src = "./vectors/edit.svg";
+			edit_img.width = "23";
+			edit_button.appendChild(edit_img);
 			const loading_img = document.createElement("img");
 			loading_img.src = "./vectors/loading.svg";
 			loading_img.width = "20";
@@ -143,17 +159,12 @@ export const get_files = (dir) => {
 					get_files(entry.name);
 				} else if (entry.type == "d") {
 					get_files(sessionStorage.getItem("current_dir")+"/"+entry.name);
-				} else if (entry.type == "f" && sessionStorage.getItem("current_dir") == '') {
+				} else if (entry.type == "f") {
 					loading_img.style.display = "block";
-					fetch(getFetchBall('get-content', `path=${entry.name}`))
-					.then(response => {
+					const url = `/yrFiles/files/${encodeURI(entry["relative-path"])}?username=${username}&password=${password}`;
+					fetch(url, {method: "HEAD"})
+					.then(async(response) => {
 						const contentType = response.headers.get('Content-Type');
-					
-						return response.blob().then(blob => {
-							return {blob, contentType}
-						});
-					})
-					.then(async({blob, contentType}) => {
 						dim_frame.style.animation = "fade 300ms forwards reverse";
 						dim_frame.style.display = "block";
 						if (contentType.startsWith("image/")) {
@@ -161,8 +172,6 @@ export const get_files = (dir) => {
 							videocont.style.display = "none";
 							audiocont.style.display = "none";
 							textcont.style.display = "none";
-
-							const url = URL.createObjectURL(blob);
 							imgcont.src = url;
 
 							const returnedimg = new Image();
@@ -183,9 +192,8 @@ export const get_files = (dir) => {
 							videocont.style.display = "none";
 							audiocont.style.display = "none";
 							textcont.style.display = "none";
-						
-							const url = URL.createObjectURL(blob);
 							videocont.src = url;
+							
 							const loadmetadata = () => {
 								videocont.style.aspectRatio = `${videocont.videoWidth} / ${videocont.videoHeight}`;
 								if (videocont.videoWidth / videocont.videoHeight <= 1.05) {
@@ -206,8 +214,6 @@ export const get_files = (dir) => {
 							videocont.style.display = "none";
 							audiocont.style.display = "none";
 							textcont.style.display = "none";
-
-							const url = URL.createObjectURL(blob);
 							audiocont.src = url;
 
 							dim_frame.style.display = "block";
@@ -218,86 +224,8 @@ export const get_files = (dir) => {
 							audiocont.style.display = "none";
 							textcont.style.display = "none";
 							
-							blob.text().then(text => { textcont.textContent = text; });
-
-							dim_frame.style.display = "block";
-							textcont.style.display = "block";
-						}
-						loading_img.style.display = "none";
-					});
-				} else if (entry.type == "f") {
-					const dir = sessionStorage.getItem("current_dir");
-					const input_path = dir ? `${encodeURIComponent(dir)}~%2F~${encodeURIComponent(entry.name)}` : encodeURIComponent(entry.name);
-					loading_img.style.display = "block";
-					fetch(getFetchBall('get-content', `path=${input_path}`))
-					.then(response => {
-						const contentType = response.headers.get('Content-Type');
-					
-						return response.blob().then(blob => {
-							return {blob, contentType}
-						});
-					})
-					.then(async({blob, contentType}) => {
-						dim_frame.style.animation = "fade 150ms forwards reverse";
-						dim_frame.style.display = "block";
-						if (contentType.startsWith("image/")) {
-							imgcont.style.display = "none";
-							videocont.style.display = "none";
-							audiocont.style.display = "none";
-							textcont.style.display = "none";
-
-							const url = URL.createObjectURL(blob);
-							imgcont.src = url;
-
-							const returnedimg = new Image();
-							returnedimg.src = url;
-							await returnedimg.decode();
-							imgcont.style.aspectRatio = `${returnedimg.naturalWidth} / ${returnedimg.naturalHeight}`;
-							if (returnedimg.naturalWidth / returnedimg.naturalHeight <= 1.05) {
-								imgcont.style.height = "80%";
-								imgcont.style.width = "";
-							} else {
-								imgcont.style.width = "80%";
-								imgcont.style.height = "";
-							}
-
-							imgcont.style.display = "block";
-						} else if (contentType.startsWith("video/")) {
-							imgcont.style.display = "none";
-							videocont.style.display = "none";
-							audiocont.style.display = "none";
-							textcont.style.display = "none";
-						
-							const url = URL.createObjectURL(blob);
-							videocont.src = url;
-							const loadmetadata = () => {
-								videocont.style.aspectRatio = `${videocont.videoWidth} / ${videocont.videoHeight}`;
-								if (videocont.videoWidth / videocont.videoHeight <= 1.05) videocont.style.height = "80%";
-								else videocont.style.width = "80%";
-
-								dim_frame.style.display = "block";
-								videocont.style.display = "block";
-								videocont.removeEventListener("loadedmetadata", loadmetadata);	
-							}
-							videocont.addEventListener("loadedmetadata", loadmetadata);
-						} else if (contentType.startsWith("audio/")) {
-							imgcont.style.display = "none";
-							videocont.style.display = "none";
-							audiocont.style.display = "none";
-							textcont.style.display = "none";
-
-							const url = URL.createObjectURL(blob);
-							audiocont.src = url;
-
-							dim_frame.style.display = "block";
-							audiocont.style.display = "block";
-						} else {
-							imgcont.style.display = "none";
-							videocont.style.display = "none";
-							audiocont.style.display = "none";
-							textcont.style.display = "none";
-							
-							blob.text().then(text => { textcont.textContent = text; });
+							await fetch(url).then(response => response.text())
+							.then(text => textcont.textContent = text)
 
 							dim_frame.style.display = "block";
 							textcont.style.display = "block";
@@ -309,71 +237,63 @@ export const get_files = (dir) => {
 			delete_button.addEventListener("mouseenter", () => { delete_img.src = "./vectors/trash-hover.svg"; });
 			delete_button.addEventListener("mouseleave", () => { delete_img.src = "./vectors/trash.svg"; });
 			delete_button.addEventListener('click', async() => {
-				if (window.confirm(`Are you sure you want to delete '${entry.name}'?`)) {
-					if (sessionStorage.getItem("current_dir") == '') {
-						fetch(getFetchBall('delete-file', `name=${entry.name}`))
-						.then(response => {
-							if (response.status === 404) {
-								window.alert(`No such file as ${entry.name}!`);
-							}
-							if (response.status === 302) get_files(sessionStorage.getItem('current_dir'));
-						})
-					} else {
-						const path = sessionStorage.getItem("current_dir").replaceAll("/", "~%2F~");
-						fetch(getFetchBall('delete-file', `name=${path}~%2F~${entry.name}`))
-						.then(response => {
-							if (response.status === 404) {
-								window.alert(`No such file as ${entry.name}!`);
-							}
-							if (response.status === 302) get_files(sessionStorage.getItem('current_dir'));
-						})
-					}
-				}
+				if (window.confirm(`Are you sure you want to delete '${entry.name}'?`))
+					fetch(getFetchBall('delete-file', `name=${encodeURIComponent(entry["relative-path"].replaceAll("/", "~/~"))}`))
+					.then(response => {
+						if (response.status === 404) window.alert(`No such file as ${entry.name}!`);
+						if (response.status === 302) get_files(sessionStorage.getItem('current_dir'));
+					});
 			});
 
 			rename_button.addEventListener("click", () => {
 				const new_name = window.prompt(`Enter a new name for '${entry.name}'.`, entry.name);
 				if (new_name === null || new_name.trim() === "") return;
-
-				const currentDir = sessionStorage.getItem("current_dir");
-
-				if (currentDir === null || currentDir.trim() === '') {
-					fetch(getFetchBall('rename-file', `path=${entry.name}&newname=${new_name}`))
-						.then(response => {
-							if (response.ok) get_files(currentDir);
-						});
-				} else {
-					const encodedPath = currentDir.replaceAll("/", "~%2F~");
-					fetch(getFetchBall('rename-file', `path=${encodedPath}~%2F~${entry.name}&newname=${new_name}`))
-						.then(response => {
-							if (response.ok) get_files(currentDir);
-						});
-				}
+				console.log(new_name);
+				fetch(getFetchBall('rename-file', `path=${encodeURIComponent(entry["relative-path"].replaceAll("/", "~/~"))}&newname=${encodeURIComponent(new_name)}`))
+				.then(response => {
+					if (response.ok) get_files(sessionStorage.getItem("current_dir"));
+				});
 			});
 			download_button.addEventListener("click", () => {
-				const input_path = sessionStorage.getItem("current_dir")
-					? `${encodeURIComponent(sessionStorage.getItem("current_dir").split("/").join("~/~"))}~%2F~${encodeURIComponent(entry.name)}`
-					: encodeURIComponent(entry.name);
-				fetch(getFetchBall("get-content", `path=${input_path}`))
-				.then(response => {
-					if (response.ok) return response.blob();
-				})
-				.then(blob => {
-					const url = URL.createObjectURL(blob);
-					const link = document.createElement("a");
-					link.style.display = "none";
-					link.href = url;
-					link.target = "_blank";
-					link.download = entry.name;
-					link.click();
-					link.remove();
-				});
-			})
+				const link = document.createElement("a");
+				link.style.display = "none";
+				link.href = `/yrFiles/files/${encodeURI(entry["relative-path"])}`;
+				link.target = "_blank";
+				link.download = entry.name;
+				link.click();
+				link.remove();
+			});
+			edit_button.addEventListener("click", () => {
 
+			});
+			contextMenuButton.addEventListener("click", () => {
+				if (getComputedStyle(contextMenu).display == "none") {
+					for (const cm of Array.from(files.getElementsByClassName("options"))) {
+						cm.style.display = "";
+						cm.parentElement.querySelector("button")
+							.style.backgroundColor = "";
+					}
+					contextMenu.style.display = "flex";
+					contextMenuButton.style.backgroundColor = "#444";
+					const y = contextMenuButton.getBoundingClientRect().top + window.scrollY;
+					contextMenu.style.top = Math.min(y, 485) + "px";
+					contextMenu.style.left = `${contextMenuButton.getBoundingClientRect().left - 205}px`;
+				} else {
+					contextMenu.style.display = "";
+					contextMenuButton.style.backgroundColor = ""
+				}
+			});
 			entry_div.appendChild(entry_span);
-			entry_div.appendChild(delete_button);
-			entry_div.appendChild(rename_button);
-			entry_div.appendChild(download_button);
+			entry_div.appendChild(contextMenuButton);
+			entry_div.appendChild(contextMenu);
+			contextMenu.appendChild(delete_button);
+			contextMenu.appendChild(rename_button);
+			if (entry.type == "f") contextMenu.appendChild(download_button);
+			if (entry.type == "f") fetch(`/yrFiles/files/${encodeURI(entry["relative-path"])}?username=root&password=root`, {method: "HEAD"})
+			.then(response => {
+				if (response.ok && response.headers.get("Content-Type").startsWith("text/"))
+					contextMenu.appendChild(edit_button);
+			});
 			files.appendChild(entry_div);
 		}
 	})

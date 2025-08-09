@@ -53,12 +53,11 @@ const shortenName = (s, maxLength) => {
 	if (s.length > maxLength) return s.slice(0, maxLength)+"...";
 	else return s;	
 }
-const playSong = (id) => {
+const playSong = async(songDiv, id) => {
 	const cover = document.querySelector("#player > .simg-cont > img");
 	const title = document.querySelector("#player > .song-info > b");
 	const artist = document.querySelector("#player > .song-info > span");
 	const songBar = document.getElementById("song-bar");
-	const total = document.querySelector("#player > .song-info > .time > .total")
 
 	fetch(getFetchBall("get-song-info", `id=${id}`)).then(response => {
 		if (response.ok) return response.json();
@@ -95,11 +94,18 @@ const playSong = (id) => {
 		cover.style.aspectRatio = "1/1";
 		cover.style.width = "32px";
 	});
+
+	currentSong = id;
+	for (const element of Array.from(document.getElementById("songs").getElementsByClassName("song"))) {
+		element.querySelector(".simg-cont > div").style.display = "none";
+	}
+	songDiv.querySelector(".simg-cont > div").style.display = "flex";
 }
 
 let albumsClickable = true;
 let songsClickable = true;
 let artistsClickable = true;
+let currentSong;
 let queue = [];
 const showAllAlbums = async() => {	
 	if (!albumsClickable) return;
@@ -228,8 +234,6 @@ const showAllArtists = async() => {
 
 const showAllSongs = async() => {
 	if (!songsClickable) return;
-	for (const element of Array.from(document.getElementById("songs").childNodes)) element.remove();
-
 	fetch(getFetchBall("get-songs"))
 	.then(response => {
 		if (response.ok) return response.json();
@@ -248,9 +252,9 @@ const showAllSongs = async() => {
 		for (const song of songs) {
 			const songDiv = document.createElement("div");
 			songDiv.classList.add("song");
+			songDiv.dataset.id = song.id;
 			content.appendChild(songDiv);
-		
-			songDiv.addEventListener("click", () => playSong(song.id));
+			songDiv.addEventListener("click", () => playSong(songDiv, song.id));
 
 			const songIMGCont = document.createElement("div");
 			songIMGCont.classList.add("simg-cont");
@@ -270,9 +274,15 @@ const showAllSongs = async() => {
 			}).catch(() => {
 				songIMG.src = "./vectors/song.svg";
 				songIMG.style.aspectRatio = "1/1";
-				songIMG.style.width = "24px";
+				songIMG.style.width = "20px";
 				songIMGCont.appendChild(songIMG);
 			});
+			const playingIcon = document.createElement("div");
+			songIMGCont.appendChild(playingIcon);
+			const piIMG = document.createElement("img");
+			piIMG.src = "./vectors/playing.svg";
+			piIMG.width = "20"; playingIcon.appendChild(piIMG);
+			playingIcon.style.display = songDiv.dataset.id === currentSong? "flex":"none";			
 		
 			const songInfo = document.createElement("div");
 			songInfo.classList.add("sinfo");
@@ -286,8 +296,8 @@ const showAllSongs = async() => {
 			songArtist.textContent = song.artist;
 			songInfo.appendChild(songArtist);
 		}
-	})
-}
+	});
+} 
 
 let sidebaropened = false;
 const sidebar = document.getElementById("sidebar");
@@ -361,6 +371,15 @@ document.getElementById("song").addEventListener("play", () => {
 document.getElementById("song").addEventListener("pause", () => {
 	const play = document.getElementById("play");
 	play.querySelector("img").src = "./vectors/play.svg";
+});
+document.getElementById("repeat").addEventListener("click", () => {
+	if (document.getElementById("song").loop) {
+		document.getElementById("song").loop = false;
+		document.getElementById("repeat").querySelector("img").src = "./vectors/repeat.svg"
+	} else {
+		document.getElementById("song").loop = true;
+		document.getElementById("repeat").querySelector("img").src = "./vectors/repeat-toggled.svg"
+	}
 });
 
 document.getElementById("play").addEventListener("click", () => {
