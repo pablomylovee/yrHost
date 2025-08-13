@@ -26,7 +26,7 @@ func log(logType int, content string, addSeparator bool) bool {
 	case COMPLETE:
 		fmt.Printf("%s>> %s%s\n", GREEN, RESET, content)
 	case STEP:
-		fmt.Printf("	%s•%s %s", CYAN, RESET, content)
+		fmt.Printf("	%s•%s %s\n", CYAN, RESET, content)
 	default:
 		return false
 	}

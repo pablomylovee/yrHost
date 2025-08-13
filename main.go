@@ -25,6 +25,9 @@ var filePath string
 //go:embed gui/yrFiles/*
 var yrFiles embed.FS
 
+//go:embed gui/yrText/*
+var yrText embed.FS
+
 //go:embed gui/yrSound/*
 var yrSound embed.FS
 
@@ -87,7 +90,7 @@ func main() {
 		if slices.Contains(get_settings().Services, "sound") {
 			log(STEP, "Preparing `yrSound`...\n", false)
 			os.Mkdir(filepath.Join(ys_savePath, user.Username), 0755)
-			os.Mkdir(filepath.Join(ys_savePath, user.Username, "picture"), 0755)
+			os.Mkdir(filepath.Join(ys_savePath, user.Username, "pictures"), 0755)
 			var songs []Song
 			var err error = Index(filepath.Join(ys_savePath, user.Username), &songs)
 			if err != nil {
@@ -152,6 +155,7 @@ func main() {
 			return c.SendStatus(fiber.StatusForbidden)
 		}
 	})
+	app.Static("/logo", "./logo.png")
 	app.Get("/favicon.ico", func(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusNoContent)
 	})
@@ -159,7 +163,7 @@ func main() {
 	// yrFiles
 	if slices.Contains(get_settings().Services, "files") {
 		var yrFilesSub, _ = fs.Sub(yrFiles, "gui/yrFiles")
-		app.Use("/yrFiles/", func(c *fiber.Ctx) error {
+		app.Get("/yrFiles/", func(c *fiber.Ctx) error {
 			if !check_allowed(c) {
 				return c.SendStatus(fiber.StatusForbidden)
 			}
@@ -170,11 +174,20 @@ func main() {
 		app.Get("/yrFiles", func(c *fiber.Ctx) error {
 			return c.Redirect("/yrFiles/", fiber.StatusMovedPermanently)
 		})
+		app.Get("/yrText/", func(c *fiber.Ctx) error {
+			if !check_allowed(c) || !check_auth(c) {
+				return c.SendStatus(fiber.StatusForbidden)
+			}
+			return c.Next()
+		})
+		var yrTextSub, _ = fs.Sub(yrText, "gui/yrText")
+		app.Use("/yrText/", filesystem.New(filesystem.Config{Root: http.FS(yrTextSub)}))
 
 		app.Get("/delete-file", http_deleteFile)
 		app.Get("/get-files/*", http_getFiles)
 		app.Get("/rename-file", http_renameFile)
 		app.Post("/upload-chunk", http_uploadChunk)
+		app.Post("/write-to-file", http_writeToFile)
 	}
 	// yrSound
 	if slices.Contains(get_settings().Services, "sound") {
@@ -193,9 +206,10 @@ func main() {
 		app.Get("/get-cover", http_getCover)
 		app.Post("/get-id", http_getID)
 		app.Get("/get-albums", http_getAlbums)
-		app.Get("/get-album", http_getAlbum)
+		app.Post("/get-album", http_getAlbum)
 		app.Get("/get-songs", http_getSongs)
 		app.Get("/get-artists", http_getArtists)
+		app.Get("/get-artist-picture", http_getArtistPFP)
 		app.Get("/get-song-info", http_getSongInfo)
 		app.Get("/get-song-blob", http_getSongBlob)
 	}

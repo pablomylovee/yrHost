@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"fmt"
 	"io/fs"
 	"mime"
 	"net/http"
@@ -127,6 +128,36 @@ func http_uploadChunk(c *fiber.Ctx) error {
 	}
 
 	log(COMPLETE, "Successfully wrote chunks!", true)
+	return c.SendStatus(fiber.StatusOK)
+}
+func http_writeToFile(c *fiber.Ctx) error {
+	if !check_allowed(c) || !check_auth(c) {
+		return c.SendStatus(fiber.StatusForbidden)
+	}
+	log(ATTEMPT, "Attempt to write to file initiated.", false)
+
+	var relativePath, _ = url.PathUnescape(c.Query("path"))
+	var path string = filepath.Join(yf_savePath, c.Query("username"), relativePath)
+
+	var dest, err = os.OpenFile(path, os.O_WRONLY|os.O_TRUNC, 0666)
+	if err != nil {
+		log(ERROR, "A system error occured while trying to open target file.", true)
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	defer dest.Close()
+	log(COMPLETE, "Opened file for writing!", false)
+
+	log(ATTEMPT, "Creating and copying request body buffer to target.", false)
+	log(STEP, fmt.Sprintf("Content-Length: %d", len(c.Body())), false)
+	var buffer *bytes.Buffer = bytes.NewBuffer(c.Body())
+	var w, err1 = io.CopyBuffer(dest, buffer, make([]byte, 3145728))
+	if err1 != nil {
+		log(ERROR, "A system error occured while trying to write to file.\n		"+err1.Error(), true)
+		return c.SendStatus(fiber.StatusInternalServerError)
+	}
+	log(STEP, fmt.Sprintf("Written: %d", w), false)
+
+	log(COMPLETE, "Successfully wrote to file!", true)
 	return c.SendStatus(fiber.StatusOK)
 }
 

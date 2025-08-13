@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -510,23 +509,23 @@ func http_getSongBlob(c *fiber.Ctx) error {
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 
-		var songFile, err1 = os.Open(file_path)
-		if err1 != nil {
-			log(ERROR, "An error occured while trying to open song.", true)
-			return c.SendStatus(fiber.StatusInternalServerError)
-		}
-		defer songFile.Close()
-
-		var songBytes, err2 = io.ReadAll(songFile)
-		if err2 != nil {
-			log(ERROR, "An error occured while trying to read song.", true)
-			return c.SendStatus(fiber.StatusInternalServerError)
-		}
-		c.Type("application/json")
 		log(COMPLETE, "Returned song blob successfully!", true)
-		return c.Send(songBytes)
+		return c.SendFile(file_path)
 	} else {
 		log(ERROR, "Couldn't find song.", true)
 		return c.SendStatus(fiber.StatusInternalServerError)
 	}
+}
+
+func http_getArtistPFP(c *fiber.Ctx) error {
+	if !check_allowed(c) || !check_auth(c) {
+		return c.SendStatus(fiber.StatusForbidden)
+	}
+	for _, v := range get_settings().YrSound.ArtistPictures {
+		if c.Query("name") == v.Name {
+			return c.SendFile(filepath.Join(ys_savePath, c.Query("username"), "pictures", v.Path))
+		}
+	}
+
+	return c.SendStatus(fiber.StatusNotFound)
 }

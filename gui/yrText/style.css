@@ -1,0 +1,38 @@
+html, body {
+	width: 100%; height: 100%; background-color: #2a2a2a;
+	margin: 0; padding: 0; font-family: sans-serif; color: #fff;
+	user-select: none; overflow: hidden; display: flex;
+    flex-direction: column;
+}
+
+#notification {
+    display: none; align-items: center; background-color: #3a3939;
+    justify-content: center; width: fit-content; color: #fff;
+    height: fit-content; padding: 10px; border-radius: 5px;
+    position: fixed; transform: translateX(-50%); left: 50%;
+    top: 10px; transition: opacity 300ms ease; opacity: 0;
+}
+#bot {
+    display: flex; align-items: center; width: 100%;
+    padding: 0 15px; background-color: #444;
+    overflow: hidden; gap: 8px; height: 28px;
+    font-family: monospace; font-size: 14px;
+}
+
+#content {
+    display: flex; align-items: center; justify-content: center;
+    flex: 1; height: 100%; box-sizing: border-box;
+}
+
+#not-found {
+    display: none; flex-direction: column; gap: 4px;
+    align-items: center; justify-content: center;
+    height: fit-content; width: fit-content;
+}
+#writer {
+    display: none; flex: 1; resize: none; background-color: #2a2a2a;
+    color: #fff; width: 100%; height: calc(100% - 20px); border-style: none;
+    padding: 10px;
+}
+#writer:focus { outline: none; }
+

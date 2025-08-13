@@ -243,6 +243,8 @@ export const get_files = (dir) => {
 						if (response.status === 404) window.alert(`No such file as ${entry.name}!`);
 						if (response.status === 302) get_files(sessionStorage.getItem('current_dir'));
 					});
+				contextMenu.style.display = "";
+				contextMenuButton.style.backgroundColor = ""
 			});
 
 			rename_button.addEventListener("click", () => {
@@ -253,6 +255,8 @@ export const get_files = (dir) => {
 				.then(response => {
 					if (response.ok) get_files(sessionStorage.getItem("current_dir"));
 				});
+				contextMenu.style.display = "";
+				contextMenuButton.style.backgroundColor = ""
 			});
 			download_button.addEventListener("click", () => {
 				const link = document.createElement("a");
@@ -262,9 +266,18 @@ export const get_files = (dir) => {
 				link.download = entry.name;
 				link.click();
 				link.remove();
+				contextMenu.style.display = "";
+				contextMenuButton.style.backgroundColor = ""
 			});
 			edit_button.addEventListener("click", () => {
-
+				const a = document.createElement("a");
+				a.href = getFetchBall("yrText/", `relative-path=${encodeURI(entry["relative-path"])}`);
+				a.target = "_blank";
+				document.body.appendChild(a);
+				a.click();
+				a.remove();
+				contextMenu.style.display = "";
+				contextMenuButton.style.backgroundColor = ""
 			});
 			contextMenuButton.addEventListener("click", () => {
 				if (getComputedStyle(contextMenu).display == "none") {
@@ -289,10 +302,29 @@ export const get_files = (dir) => {
 			contextMenu.appendChild(delete_button);
 			contextMenu.appendChild(rename_button);
 			if (entry.type == "f") contextMenu.appendChild(download_button);
+			const editable = (response) => {
+				if (!response.ok) return false;
+				const type = response.headers.get("Content-Type").split(";")[0].trim();
+				const contentTypes = [
+					"application/json",
+					"application/javascript",
+					"application/xml",
+					"application/xhtml+xml",
+					"application/ld+json",
+					"application/graphql",
+					"application/rss+xml",
+					"application/atom+xml",
+					"application/sql"
+				];
+				if (type.startsWith("text/") || contentTypes.includes(type)) {
+					return true;
+				}
+				return false;
+			};
+
 			if (entry.type == "f") fetch(`/yrFiles/files/${encodeURI(entry["relative-path"])}?username=root&password=root`, {method: "HEAD"})
 			.then(response => {
-				if (response.ok && response.headers.get("Content-Type").startsWith("text/"))
-					contextMenu.appendChild(edit_button);
+				if (editable(response)) contextMenu.appendChild(edit_button);
 			});
 			files.appendChild(entry_div);
 		}

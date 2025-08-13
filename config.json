@@ -10,11 +10,43 @@
 		}
 	],
 	"yrFiles": {
-		"save-path": "D:"
+		"save-path": "/Users/lsh/Documents/yrFiles"
 	},
 	"yrSound": {
-		"save-path": "E:",
+		"save-path": "/Users/lsh/Documents/yrSound",
 		"artist-pictures": [
+			{
+				"name": "Tyler, The Creator",
+				"path": "tyler.webp"
+			},
+			{
+				"name": "Kali Uchis",
+				"path": "kali.webp"
+			},
+			{
+				"name": "Kanye West",
+				"path": "kanye.webp"
+			},
+			{
+				"name": "Frank Ocean",
+				"path": "frank.webp"
+			},
+			{
+				"name": "Steve Lacy",
+				"path": "steve.webp"
+			},
+			{
+				"name": "SZA",
+				"path": "sza.webp"
+			},
+			{
+				"name": "Summer Walker",
+				"path": "summer.webp"
+			},
+			{
+				"name": "PARTYNEXTDOOR",
+				"path": "pnd.webp"
+			},
 			{
 				"name": "Childish Gambino",
 				"path": "cg.webp"
