@@ -6,6 +6,7 @@ require github.com/dhowden/tag v0.0.0-20240417053706-3d75831295e8
 
 require (
 	github.com/andybalholm/brotli v1.1.0 // indirect
+	github.com/facette/natsort v0.0.0-20181210072756-2cd4dd1e2dcb // indirect
 	github.com/gabriel-vasile/mimetype v1.4.9 // indirect
 	github.com/gofiber/fiber/v2 v2.52.9 // indirect
 	github.com/google/uuid v1.6.0 // indirect

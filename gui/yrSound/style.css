@@ -20,7 +20,7 @@ html, body {
 }
 
 #authentication {
-	display: none; flex-direction: column; gap: 8px; align-items: center;
+	display: flex; flex-direction: column; gap: 8px; align-items: center;
 	justify-content: center; width: 300px; height: 165px;
 	transform: translate(-50%, -50%); top: 50%; left: 50%;
 	position: fixed; background-color: #393939;
@@ -57,7 +57,7 @@ html, body {
 	cursor: pointer; box-shadow: 0 0 4px #666; transition: top 400ms ease;
 }
 #sidebar {
-	width: calc(100% - 16px); display: none; height: 330px;
+	width: calc(100% - 16px); display: none; height: 415px;
 	align-items: center; padding: 8px; border-radius: 16px;
 	background-color: #383838; color: #fff; border-top-right-radius: 0;
 	flex-direction: column; gap: 4px; border-top-left-radius: 0;

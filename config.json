@@ -1,6 +1,5 @@
 {
 	"port": 3005,
-	"sudo-auth": "likoliko12",
 	"ip-blacklist": [],
 	"ip-whitelist": [],
 	"services": ["files", "sound"],
@@ -10,10 +9,10 @@
 		}
 	],
 	"yrFiles": {
-		"save-path": "/Users/lsh/Documents/yrFiles"
+		"save-path": "/home/lsh/Projects/tools/Go/yrHost/yrFiles"
 	},
 	"yrSound": {
-		"save-path": "/Users/lsh/Documents/yrSound",
+		"save-path": "/home/lsh/Projects/tools/Go/yrHost/yrSound",
 		"artist-pictures": [
 			{
 				"name": "Tyler, The Creator",

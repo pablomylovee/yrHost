@@ -14,7 +14,6 @@ type User struct {
 type UserPreferences struct {
 	Port      int      `json:"port"`
 	Users     []User   `json:"users"`
-	SudoAuth  string   `json:"sudo-auth"`
 	Blacklist []string `json:"ip-blacklist"`
 	Whitelist []string `json:"ip-whitelist"`
 	Services  []string `json:"services"`

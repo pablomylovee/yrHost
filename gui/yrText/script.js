@@ -72,8 +72,8 @@ fetch(getFetchBall(`yrFiles/files/${encodeURI(params.get("relative-path"))}`))
     bot.textContent = params.get("relative-path");
   }) 
 
-document.addEventListener("keypress", (e) => {
-    if (e.ctrlKey && e.key === "s")
+document.addEventListener("keydown", (e) => {
+    if (e.ctrlKey && e.key === ".")
         fetch(
             getFetchBall("write-to-file", `path=${encodeURI(params.get("relative-path"))}`),
             {method: "POST", body: textarea.value},

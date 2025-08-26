@@ -34,19 +34,22 @@ var yrSound embed.FS
 // settings types
 func check_allowed(c *fiber.Ctx) bool {
 	var host string = c.IP()
+	log(ATTEMPT, "Checking if request is allowed...", false);
+	log(STEP, "Host (c.IP): "+host, false);
 	if slices.Contains(get_settings().Blacklist, host) {
+		log(ERROR, "Blocked by the blacklist.", true);
 		return false
 	}
 	if whitelist := get_settings().Whitelist; len(whitelist) > 0 {
-		var allowed bool = false
 		if slices.Contains(whitelist, host) {
-			allowed = true
+			log(COMPLETE, "Allowed by the whitelist.", true);
+			return true
 		}
-		if !allowed {
-			return false
-		}
+		log(ERROR, "Blocked by the whitelist.", true);
+		return false
 	}
 
+	log(COMPLETE, "Allowed by the blacklist", true);
 	return true
 }
 func check_auth(c *fiber.Ctx) bool {
@@ -67,32 +70,37 @@ func check_auth(c *fiber.Ctx) bool {
 
 func main() {
 	filePath, _ = filepath.Abs(".")
-	//unknown ext by golang (those little shits)
-
-	mime.AddExtensionType(".mov", "video/quicktime")
-	mime.AddExtensionType(".heic", "image/heic")
-	mime.AddExtensionType(".heif", "image/heif")
-	mime.AddExtensionType(".mkv", "video/x-matroska")
-	mime.AddExtensionType(".webm", "video/webm")
-	mime.AddExtensionType(".flac", "audio/flac")
-	mime.AddExtensionType(".opus", "audio/opus")
-	mime.AddExtensionType(".woff2", "font/woff2")
-	mime.AddExtensionType(".epub", "application/epub+zip")
-	mime.AddExtensionType(".ics", "text/calendar")
-	mime.AddExtensionType(".md", "text/markdown")
+	
+	// adding extentions unknown by golang (those little shits)
+	mime.AddExtensionType(    ".mov"   , "video/quicktime"       )
+	mime.AddExtensionType(    ".heic"  , "image/heic"            )
+	mime.AddExtensionType(    ".heif"  , "image/heif"            )
+	mime.AddExtensionType(    ".mkv"   , "video/x-matroska"      )
+	mime.AddExtensionType(    ".webm"  , "video/webm"            )
+	mime.AddExtensionType(    ".flac"  , "audio/flac"            )
+	mime.AddExtensionType(    ".opus"  , "audio/opus"            )
+	mime.AddExtensionType(    ".woff2" , "font/woff2"            )
+	mime.AddExtensionType(    ".epub"  , "application/epub+zip"  )
+	mime.AddExtensionType(    ".ics"   , "text/calendar"         )
+	mime.AddExtensionType(    ".md"    , "text/markdown"         )
+	// got bored so i started centering the extentions haha
 
 	log(ATTEMPT, "Initializing services for `yrHost`...", false)
 	for _, user := range get_settings().Users {
 		if slices.Contains(get_settings().Services, "files") {
-			log(STEP, "Preparing `yrFiles`...\n", false)
+			log(STEP, "Preparing `yrFiles`...", false)
 			os.Mkdir(filepath.Join(yf_savePath, user.Username), 0755)
+			os.Mkdir(filepath.Join(yf_savePath, user.Username, "packs"), 0755)
+			os.Mkdir(filepath.Join(yf_savePath, user.Username, "files"), 0755)
 		}
 		if slices.Contains(get_settings().Services, "sound") {
-			log(STEP, "Preparing `yrSound`...\n", false)
+			log(STEP, "Preparing `yrSound`...", false)
 			os.Mkdir(filepath.Join(ys_savePath, user.Username), 0755)
 			os.Mkdir(filepath.Join(ys_savePath, user.Username, "pictures"), 0755)
+			os.Mkdir(filepath.Join(ys_savePath, user.Username, "packs"), 0755)
+			os.Mkdir(filepath.Join(ys_savePath, user.Username, "files"), 0755)
 			var songs []Song
-			var err error = Index(filepath.Join(ys_savePath, user.Username), &songs)
+			var err error = Index(filepath.Join(ys_savePath, user.Username, "files"), &songs)
 			if err != nil {
 				log(ERROR, "An error occured while trying to index all songs for `yrSound`.", true)
 				return
@@ -139,16 +147,8 @@ func main() {
 	fmt.Println(BLUE + "Starting " + PINK + "HTTP server..." + RESET)
 
 	// misc
-	app.Get("/users-qm", func(c *fiber.Ctx) error {
-		log(ATTEMPT, "CLIENT: Does this server have users?", true)
-		if len(get_settings().Users) == 0 {
-			return c.SendStatus(fiber.StatusNotFound)
-		} else {
-			return c.SendStatus(fiber.StatusOK)
-		}
-	})
 	app.Get("/isUser-qm", func(c *fiber.Ctx) error {
-		log(ATTEMPT, "CLIENT: Are these dudes with you?", true)
+		log(ATTEMPT, "CLIENT: Is my login correct?", true)
 		if check_auth(c) {
 			return c.SendStatus(fiber.StatusOK)
 		} else {
@@ -159,11 +159,16 @@ func main() {
 	app.Get("/favicon.ico", func(c *fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusNoContent)
 	})
+	// packs (all services)
+	app.Get("/create-pack", http_createPack);
+	app.Post("/create-entry", http_createEntry);
+	app.Post("/append-chunk", http_appendChunk);
+	app.Get("/assemble-pack", http_assemblePack);
 
 	// yrFiles
 	if slices.Contains(get_settings().Services, "files") {
 		var yrFilesSub, _ = fs.Sub(yrFiles, "gui/yrFiles")
-		app.Get("/yrFiles/", func(c *fiber.Ctx) error {
+		app.Use("/yrFiles/", func(c *fiber.Ctx) error {
 			if !check_allowed(c) {
 				return c.SendStatus(fiber.StatusForbidden)
 			}
@@ -174,7 +179,7 @@ func main() {
 		app.Get("/yrFiles", func(c *fiber.Ctx) error {
 			return c.Redirect("/yrFiles/", fiber.StatusMovedPermanently)
 		})
-		app.Get("/yrText/", func(c *fiber.Ctx) error {
+		app.Use("/yrText/", func(c *fiber.Ctx) error {
 			if !check_allowed(c) || !check_auth(c) {
 				return c.SendStatus(fiber.StatusForbidden)
 			}

@@ -41,7 +41,7 @@ func http_deleteFile(c *fiber.Ctx) error {
 	}
 	var parts []string = strings.Split(file_td, "~/~")
 	file_td = filepath.Clean(filepath.Join(parts...))
-	var ts_filePath string = filepath.Join(yf_savePath, username, file_td)
+	var ts_filePath string = filepath.Join(yf_savePath, username, "files", file_td)
 	log(COMPLETE, "Path created: "+ts_filePath, false)
 
 	var _, err = os.Stat(ts_filePath)
@@ -75,7 +75,7 @@ func http_renameFile(c *fiber.Ctx) error {
 
 	var parts []string = strings.Split(path, "~/~")
 	path = filepath.Join(parts...)
-	var target_file string = filepath.Join(yf_savePath, username, path)
+	var target_file string = filepath.Join(yf_savePath, username, "files", path)
 	log(COMPLETE, "Path created: "+target_file, false)
 
 	var dir_name, _ = filepath.Split(target_file)
@@ -110,7 +110,7 @@ func http_uploadChunk(c *fiber.Ctx) error {
 	var filename string = c.Query("filename")
 	log(ATTEMPT, "Attempt to write chunks initiated.", false)
 
-	var target_path string = filepath.Join(yf_savePath, username, filepath.Join(strings.Split(filename, "~/~")...))
+	var target_path string = filepath.Join(yf_savePath, username, "files", filepath.Join(strings.Split(filename, "~/~")...))
 	os.MkdirAll(filepath.Dir(target_path), 0755)
 
 	var dest, err1 = os.OpenFile(target_path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
@@ -137,7 +137,7 @@ func http_writeToFile(c *fiber.Ctx) error {
 	log(ATTEMPT, "Attempt to write to file initiated.", false)
 
 	var relativePath, _ = url.PathUnescape(c.Query("path"))
-	var path string = filepath.Join(yf_savePath, c.Query("username"), relativePath)
+	var path string = filepath.Join(yf_savePath, c.Query("username"), "files", relativePath)
 
 	var dest, err = os.OpenFile(path, os.O_WRONLY|os.O_TRUNC, 0666)
 	if err != nil {
@@ -168,7 +168,7 @@ func http_serveFile(c *fiber.Ctx) error {
 	log(ATTEMPT, "Attempt to get file initiated.", false)
 	var username string = c.Query("username")
 	var rpath, _ = url.PathUnescape(c.Params("+"))
-	var path string = filepath.Join(yf_savePath, username, rpath)
+	var path string = filepath.Join(yf_savePath, username, "files", rpath)
 
 	var f, err = os.Stat(path)
 	if errors.Is(err, fs.ErrNotExist) {
@@ -223,7 +223,7 @@ func http_getFiles(c *fiber.Ctx) error {
 	var files []os.DirEntry
 
 	if search_dir == "" {
-		var search_path string = filepath.Join(yf_savePath, username)
+		var search_path string = filepath.Join(yf_savePath, username, "files")
 		log(COMPLETE, "Full path created: "+search_path, false)
 		var x, err = os.ReadDir(search_path)
 		if err != nil {
@@ -232,7 +232,7 @@ func http_getFiles(c *fiber.Ctx) error {
 		}
 		files = x
 	} else {
-		var search_path string = filepath.Join(yf_savePath, username, search_dir)
+		var search_path string = filepath.Join(yf_savePath, username, "files", search_dir)
 		log(COMPLETE, "Full path created: "+search_path, false)
 		var x, err = os.ReadDir(search_path)
 		if err != nil {

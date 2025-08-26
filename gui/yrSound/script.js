@@ -1,33 +1,22 @@
 // authentication
-const go_on = (addAuth) => {
-	if (addAuth) {
-		username = usernameInput.value;
-		password = passwordInput.value;
-		use_auth = true;
-	} else use_auth = false;
+const go_on = () => {
+    username = usernameInput.value;
+    password = passwordInput.value;
 	document.getElementById("authentication").style.display = "none";
 	document.getElementById("mainContent").style.display = "flex";
 	showAllSongs();
 };
 
-let use_auth;
 let username, password;
 const authenticationDiv = document.getElementById("authentication");
 const usernameInput = document.getElementById('username-input');
 const passwordInput = document.getElementById('password-input');
 const authenticateButton = document.getElementById('authenticateButton');
-const dim_frame = document.getElementById("dim-frame");
-
-fetch("/users-qm")
-.then(response => {
-	if (!response.ok) go_on(false);
-	else authenticationDiv.style.display = "flex";
-});
 
 authenticateButton.addEventListener("click", () => {
 	fetch(`/isUser-qm?username=${encodeURIComponent(usernameInput.value)}&password=${encodeURIComponent(passwordInput.value)}`)
 	.then(response => {
-		if (response.ok) go_on(true);
+		if (response.ok) go_on();
 		else {
 			document.querySelector('#authentication > span').textContent = "Invalid login.";
 			setTimeout(() => {
@@ -40,11 +29,8 @@ authenticateButton.addEventListener("click", () => {
 // main
 const getFetchBall = (ballModel, notes) => {
 	let resBall = `/${ballModel}`;
-	if (use_auth) resBall = `${resBall}?username=${username}&password=${password}`;
-	if (typeof notes !== 'undefined') {
-		if (use_auth) resBall = `${resBall}&${notes}`;
-		else resBall = `${resBall}?${notes}`;
-	}
+	resBall = `${resBall}?username=${username}&password=${password}`;
+	if (typeof notes !== 'undefined') resBall = `${resBall}&${notes}`;
 
 	return resBall;
 }
@@ -100,7 +86,9 @@ const playSong = async(songDiv, id, clearQueue) => {
 		document.getElementById("song").addEventListener("loadedmetadata", onload);
 	})();
 	(async() => {
-		const rawIMG = new Image();
+		const response = await fetch(getFetchBall("get-cover", `id=${id}`), {method: "HEAD"});
+        if (!response.ok) throw new Error(`${response.status}`)
+        const rawIMG = new Image();
 		rawIMG.src = cover.src = getFetchBall("get-cover", `id=${id}`);
 
 		rawIMG.onload = () => {
@@ -284,7 +272,9 @@ const showAllSongs = async() => {
 
 			const songIMG = document.createElement("img");
 			(async() => {
-				const rawIMG = new Image();
+                const response = await fetch(getFetchBall("get-cover", `id=${song.id}`), {method: "HEAD"});
+                if (!response.ok) throw new Error(`${response.status}`);
+                const rawIMG = new Image();
 				songIMG.src = rawIMG.src = getFetchBall("get-cover", `id=${song.id}`);
 
 				rawIMG.onload = () => {
