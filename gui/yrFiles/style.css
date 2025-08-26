@@ -37,7 +37,7 @@ html, body {
 }
 
 #authentication {
-	display: none; flex-direction: column; gap: 8px; align-items: center;
+	display: flex; flex-direction: column; gap: 8px; align-items: center;
 	justify-content: center; width: 300px; height: 165px;
 	transform: translate(-50%, -50%); top: 50%; left: 50%;
 	position: fixed; background-color: #393939;

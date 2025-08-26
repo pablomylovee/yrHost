@@ -1,10 +1,7 @@
 // authentication
-const go_on = (addAuth) => {
-	if (addAuth) {
-		username = usernameInput.value;
-		password = passwordInput.value;
-		use_auth = true;
-	} else use_auth = false;
+const go_on = () => {
+    username = usernameInput.value;
+    password = passwordInput.value;
 	sessionStorage.setItem("username", username);
 	sessionStorage.setItem("password", password);
 	authenticationDiv.style.display = 'none';
@@ -12,7 +9,6 @@ const go_on = (addAuth) => {
 	get_files();
 };
 
-export let use_auth;
 let username, password;
 const authenticationDiv = document.getElementById("authentication");
 const usernameInput = document.getElementById('username-input');
@@ -20,16 +16,10 @@ const passwordInput = document.getElementById('password-input');
 const authenticateButton = document.getElementById('authenticateButton');
 const dim_frame = document.getElementById("dim-frame");
 
-fetch("/users-qm")
-.then(response => {
-	if (!response.ok) go_on(false);
-	else authenticationDiv.style.display = "flex";
-});
-
 authenticateButton.addEventListener("click", () => {
 	fetch(`/isUser-qm?username=${encodeURIComponent(usernameInput.value)}&password=${encodeURIComponent(passwordInput.value)}`)
 	.then(response => {
-		if (response.ok) go_on(true);
+		if (response.ok) go_on();
 		else {
 			document.querySelector('#authentication > span').textContent = "Invalid login.";
 			setTimeout(() => {
@@ -75,11 +65,8 @@ refresh.addEventListener('click', () => get_files(sessionStorage.getItem('curren
 
 export const getFetchBall = (ballModel, notes) => {
 	let resBall = `/${ballModel}`;
-	if (use_auth) resBall = `${resBall}?username=${username}&password=${password}`;
-	if (typeof notes !== 'undefined') {
-		if (use_auth) resBall = `${resBall}&${notes}`;
-		else resBall = `${resBall}?${notes}`;
-	}
+	resBall = `${resBall}?username=${username}&password=${password}`;
+	if (typeof notes !== 'undefined') resBall = `${resBall}&${notes}`;
 
 	return resBall;
 }
@@ -261,7 +248,7 @@ export const get_files = (dir) => {
 			download_button.addEventListener("click", () => {
 				const link = document.createElement("a");
 				link.style.display = "none";
-				link.href = `/yrFiles/files/${encodeURI(entry["relative-path"])}`;
+				link.href = `/yrFiles/files/${encodeURI(entry["relative-path"])}?username=${username}&password=${password}`;
 				link.target = "_blank";
 				link.download = entry.name;
 				link.click();
